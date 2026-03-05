@@ -32,13 +32,13 @@ bool HttpTransport::Start(int port, ExternalEventCallback callback) {
 
     server_ = std::make_unique<httplib::Server>();
 
-    // POST /mcp — MCP Streamable HTTP
-    server_->Post("/mcp", [this](const httplib::Request& req, httplib::Response& res) {
+    // POST /mcp — MCP Streamable HTTP (accepts /mcp and /mcp/)
+    server_->Post(R"(/mcp/?)", [this](const httplib::Request& req, httplib::Response& res) {
         HandleMCPPost(req, res);
     });
 
-    // GET /mcp — SSE notification stream
-    server_->Get("/mcp", [this](const httplib::Request& req, httplib::Response& res) {
+    // GET /mcp — SSE notification stream (accepts /mcp and /mcp/)
+    server_->Get(R"(/mcp/?)", [this](const httplib::Request& req, httplib::Response& res) {
         HandleMCPGet(req, res);
     });
 
@@ -47,8 +47,8 @@ bool HttpTransport::Start(int port, ExternalEventCallback callback) {
         HandleLegacySSEMessage(req, res);
     });
 
-    // DELETE /mcp — session termination
-    server_->Delete("/mcp", [this](const httplib::Request& req, httplib::Response& res) {
+    // DELETE /mcp — session termination (accepts /mcp and /mcp/)
+    server_->Delete(R"(/mcp/?)", [this](const httplib::Request& req, httplib::Response& res) {
         HandleRequest(req, res, "REQUEST");
     });
 
