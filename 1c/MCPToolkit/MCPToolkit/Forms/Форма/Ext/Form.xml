@@ -2,6 +2,20 @@
 <Form xmlns="http://v8.1c.ru/8.3/xcf/logform" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:dcscor="http://v8.1c.ru/8.1/data-composition-system/core" xmlns:dcsset="http://v8.1c.ru/8.1/data-composition-system/settings" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.20">
 	<AutoCommandBar name="ФормаКоманднаяПанель" id="-1"/>
 	<ChildItems>
+		<Pages name="СтраницыФормы" id="55">
+			<PagesRepresentation>TabsOnTop</PagesRepresentation>
+			<ExtendedTooltip name="СтраницыФормыРасширеннаяПодсказка" id="56"/>
+			<ChildItems>
+				<Page name="СтраницаПодключение" id="57">
+					<Title>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Подключение</v8:content>
+						</v8:item>
+					</Title>
+					<Group>Vertical</Group>
+					<ExtendedTooltip name="СтраницаПодключениеРасширеннаяПодсказка" id="58"/>
+					<ChildItems>
 		<UsualGroup name="ГруппаПодключение" id="1">
 			<Title>
 				<v8:item>
@@ -119,6 +133,9 @@
 								</Title>
 							</ExtendedTooltip>
 							<ContextMenu name="ИдентификаторКаналаПолеКонтекстноеМеню" id="36"/>
+							<Events>
+								<Event name="ПриИзменении">ИдентификаторКаналаПриИзменении</Event>
+							</Events>
 						</InputField>
 						<Button name="КнопкаСгенерироватьКанал" id="37">
 							<Type>UsualButton</Type>
@@ -154,7 +171,7 @@
 									<v8:lang>ru</v8:lang>
 									<v8:content>Порт встроенного сервера</v8:content>
 								</v8:item>
-							</Title>							
+							</Title>
 							<EditFormat>
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -329,6 +346,208 @@
 				</Button>
 			</ChildItems>
 		</UsualGroup>
+					</ChildItems>
+				</Page>
+				<Page name="СтраницаАнонимизация" id="59">
+					<Title>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Анонимизация</v8:content>
+						</v8:item>
+					</Title>
+					<Group>Vertical</Group>
+					<ExtendedTooltip name="СтраницаАнонимизацияРасширеннаяПодсказка" id="60"/>
+					<ChildItems>
+						<UsualGroup name="ГруппаТочнаяАнонимизация" id="100">
+							<Group>AlwaysHorizontal</Group>
+							<Representation>None</Representation>
+							<ExtendedTooltip name="ГруппаТочнаяАнонимизацияРасширеннаяПодсказка" id="101"/>
+							<ChildItems>
+								<CheckBoxField name="ФлагИспользоватьТочнуюАнонимизацию" id="94">
+									<DataPath>ИспользоватьТочнуюАнонимизацию</DataPath>
+									<TitleLocation>Right</TitleLocation>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Использовать анонимизацию по правилам</v8:content>
+										</v8:item>
+									</Title>
+									<ExtendedTooltip name="ФлагИспользоватьТочнуюАнонимизациюРасширеннаяПодсказка" id="95"/>
+									<Events>
+										<Event name="ПриИзменении">ИспользоватьТочнуюАнонимизациюПриИзменении</Event>
+									</Events>
+								</CheckBoxField>
+								<Button name="КнопкаНастроитьТочнуюАнонимизацию" id="92">
+									<Type>UsualButton</Type>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Правила анонимизации...</v8:content>
+										</v8:item>
+									</Title>
+									<CommandName>Form.Command.ОткрытьНастройкиТочнойАнонимизации</CommandName>
+									<ExtendedTooltip name="КнопкаНастроитьТочнуюАнонимизациюРасширеннаяПодсказка" id="93"/>
+								</Button>
+								<InputField name="ПолеИсточникПравилТочнойАнонимизации" id="96">
+									<DataPath>ИсточникПравилТочнойАнонимизации</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Источник правил</v8:content>
+										</v8:item>
+									</Title>
+									<ReadOnly>true</ReadOnly>
+									<Width>25</Width>
+									<ExtendedTooltip name="ПолеИсточникПравилТочнойАнонимизацииРасширеннаяПодсказка" id="97"/>
+							</InputField>
+							<LabelDecoration name="НадписьКоличествоЗаписейСловаря" id="104">
+								<Title>
+									<v8:item>
+										<v8:lang>ru</v8:lang>
+										<v8:content> </v8:content>
+									</v8:item>
+								</Title>
+								<ContextMenu name="НадписьКоличествоЗаписейСловаряКонтекстноеМеню" id="106"/>
+								<ExtendedTooltip name="НадписьКоличествоЗаписейСловаряРасширеннаяПодсказка" id="105"/>
+							</LabelDecoration>
+						</ChildItems>
+					</UsualGroup>
+					<UsualGroup name="ГруппаМаппинги" id="102">
+							<Title>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Маппинги</v8:content>
+								</v8:item>
+							</Title>
+							<Group>Vertical</Group>
+							<Representation>NormalSeparation</Representation>
+							<ExtendedTooltip name="ГруппаМаппингиРасширеннаяПодсказка" id="103"/>
+							<ChildItems>
+								<UsualGroup name="ГруппаУправлениеМаппингами" id="61">
+									<Group>AlwaysHorizontal</Group>
+									<Representation>None</Representation>
+									<ExtendedTooltip name="ГруппаУправлениеМаппингамиРасширеннаяПодсказка" id="62"/>
+									<ChildItems>
+										<Button name="КнопкаОбновитьМаппинги" id="63">
+											<Type>UsualButton</Type>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>Обновить</v8:content>
+												</v8:item>
+											</Title>
+											<CommandName>Form.Command.ОбновитьМаппинги</CommandName>
+											<ExtendedTooltip name="КнопкаОбновитьМаппингиРасширеннаяПодсказка" id="64"/>
+										</Button>
+										<InputField name="ПолеПоискМаппингов" id="65">
+											<DataPath>ПоискМаппингов</DataPath>
+											<ClearButton>true</ClearButton>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>Поиск</v8:content>
+												</v8:item>
+											</Title>
+											<Width>30</Width>
+											<ExtendedTooltip name="ПолеПоискМаппинговРасширеннаяПодсказка" id="66"/>
+											<Events>
+												<Event name="ПриИзменении">ПоискМаппинговПриИзменении</Event>
+											</Events>
+										</InputField>
+										<LabelDecoration name="НадписьСтатистикаМаппингов" id="67">
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content> </v8:content>
+												</v8:item>
+											</Title>
+											<ContextMenu name="НадписьСтатистикаМаппинговКонтекстноеМеню" id="69"/>
+											<ExtendedTooltip name="НадписьСтатистикаМаппинговРасширеннаяПодсказка" id="68"/>
+										</LabelDecoration>
+									</ChildItems>
+								</UsualGroup>
+								<Table name="ТаблицаМаппинговПоле" id="70">
+							<Representation>List</Representation>
+							<DataPath>ТаблицаМаппингов</DataPath>
+							<TitleLocation>None</TitleLocation>
+							<ReadOnly>true</ReadOnly>
+							<Height>12</Height>
+							<Width>80</Width>
+							<RowFilter xsi:nil="true"/>
+							<ContextMenu name="ТаблицаМаппинговПолеКонтекстноеМеню" id="71"/>
+							<AutoCommandBar name="ТаблицаМаппинговПолеКоманднаяПанель" id="72">
+								<Autofill>false</Autofill>
+							</AutoCommandBar>
+							<ExtendedTooltip name="ТаблицаМаппинговПолеРасширеннаяПодсказка" id="73"/>
+							<ChildItems>
+								<InputField name="ТаблицаМаппинговПолеТокен" id="83">
+									<DataPath>ТаблицаМаппингов.Токен</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Токен</v8:content>
+										</v8:item>
+									</Title>
+									<Width>15</Width>
+									<ContextMenu name="ТаблицаМаппинговПолеТокенКонтекстноеМеню" id="84"/>
+									<ExtendedTooltip name="ТаблицаМаппинговПолеТокенРасширеннаяПодсказка" id="85"/>
+								</InputField>
+								<InputField name="ТаблицаМаппинговПолеРеальноеЗначение" id="86">
+									<DataPath>ТаблицаМаппингов.РеальноеЗначение</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Реальное значение</v8:content>
+										</v8:item>
+									</Title>
+									<Width>40</Width>
+									<ContextMenu name="ТаблицаМаппинговПолеРеальноеЗначениеКонтекстноеМеню" id="87"/>
+									<ExtendedTooltip name="ТаблицаМаппинговПолеРеальноеЗначениеРасширеннаяПодсказка" id="88"/>
+								</InputField>
+								<InputField name="ТаблицаМаппинговПолеКатегория" id="89">
+									<DataPath>ТаблицаМаппингов.Категория</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Категория</v8:content>
+										</v8:item>
+									</Title>
+									<Width>10</Width>
+									<ContextMenu name="ТаблицаМаппинговПолеКатегорияКонтекстноеМеню" id="90"/>
+									<ExtendedTooltip name="ТаблицаМаппинговПолеКатегорияРасширеннаяПодсказка" id="91"/>
+								</InputField>
+							</ChildItems>
+							<SearchStringAddition name="ТаблицаМаппинговПолеСтрокаПоиска" id="74">
+								<AdditionSource>
+									<Item>ТаблицаМаппинговПоле</Item>
+									<Type>SearchStringRepresentation</Type>
+								</AdditionSource>
+								<ContextMenu name="ТаблицаМаппинговПолеСтрокаПоискаКонтекстноеМеню" id="75"/>
+								<ExtendedTooltip name="ТаблицаМаппинговПолеСтрокаПоискаРасширеннаяПодсказка" id="76"/>
+							</SearchStringAddition>
+							<ViewStatusAddition name="ТаблицаМаппинговПолеСостояниеПросмотра" id="77">
+								<AdditionSource>
+									<Item>ТаблицаМаппинговПоле</Item>
+									<Type>ViewStatusRepresentation</Type>
+								</AdditionSource>
+								<ContextMenu name="ТаблицаМаппинговПолеСостояниеПросмотраКонтекстноеМеню" id="78"/>
+								<ExtendedTooltip name="ТаблицаМаппинговПолеСостояниеПросмотраРасширеннаяПодсказка" id="79"/>
+							</ViewStatusAddition>
+							<SearchControlAddition name="ТаблицаМаппинговПолеУправлениеПоиском" id="80">
+								<AdditionSource>
+									<Item>ТаблицаМаппинговПоле</Item>
+									<Type>SearchControl</Type>
+								</AdditionSource>
+								<ContextMenu name="ТаблицаМаппинговПолеУправлениеПоискомКонтекстноеМеню" id="81"/>
+								<ExtendedTooltip name="ТаблицаМаппинговПолеУправлениеПоискомРасширеннаяПодсказка" id="82"/>
+							</SearchControlAddition>
+						</Table>
+							</ChildItems>
+						</UsualGroup>
+					</ChildItems>
+				</Page>
+			</ChildItems>
+		</Pages>
 	</ChildItems>
 	<Attributes>
 		<Attribute name="Объект" id="1">
@@ -412,22 +631,78 @@
 				<v8:Type>xs:boolean</v8:Type>
 			</Type>
 		</Attribute>
-	<Attribute name="ФорматОтветаВстроенный" id="12">
-		<Type>
-			<v8:Type>xs:decimal</v8:Type>
-			<v8:NumberQualifiers>
-				<v8:Digits>1</v8:Digits>
-				<v8:FractionDigits>0</v8:FractionDigits>
-				<v8:AllowedSign>Nonnegative</v8:AllowedSign>
-			</v8:NumberQualifiers>
-		</Type>
-	</Attribute>
-	<Attribute name="РазрешатьОпасныеОперацииСПодтверждением" id="13">
-		<Type>
-			<v8:Type>xs:boolean</v8:Type>
-		</Type>
-	</Attribute>
-</Attributes>
+		<Attribute name="ФорматОтветаВстроенный" id="12">
+			<Type>
+				<v8:Type>xs:decimal</v8:Type>
+				<v8:NumberQualifiers>
+					<v8:Digits>1</v8:Digits>
+					<v8:FractionDigits>0</v8:FractionDigits>
+					<v8:AllowedSign>Nonnegative</v8:AllowedSign>
+				</v8:NumberQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="РазрешатьОпасныеОперацииСПодтверждением" id="13">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ПоискМаппингов" id="14">
+			<Type>
+				<v8:Type>xs:string</v8:Type>
+				<v8:StringQualifiers>
+					<v8:Length>0</v8:Length>
+					<v8:AllowedLength>Variable</v8:AllowedLength>
+				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ТаблицаМаппингов" id="15">
+			<Type>
+				<v8:Type>v8:ValueTable</v8:Type>
+			</Type>
+			<Columns>
+				<Column name="Токен" id="1">
+					<Type>
+						<v8:Type>xs:string</v8:Type>
+						<v8:StringQualifiers>
+							<v8:Length>0</v8:Length>
+							<v8:AllowedLength>Variable</v8:AllowedLength>
+						</v8:StringQualifiers>
+					</Type>
+				</Column>
+				<Column name="РеальноеЗначение" id="2">
+					<Type>
+						<v8:Type>xs:string</v8:Type>
+						<v8:StringQualifiers>
+							<v8:Length>0</v8:Length>
+							<v8:AllowedLength>Variable</v8:AllowedLength>
+						</v8:StringQualifiers>
+					</Type>
+				</Column>
+				<Column name="Категория" id="3">
+					<Type>
+						<v8:Type>xs:string</v8:Type>
+						<v8:StringQualifiers>
+							<v8:Length>20</v8:Length>
+						</v8:StringQualifiers>
+					</Type>
+				</Column>
+			</Columns>
+		</Attribute>
+		<Attribute name="ИсточникПравилТочнойАнонимизации" id="16">
+			<Type>
+				<v8:Type>xs:string</v8:Type>
+				<v8:StringQualifiers>
+					<v8:Length>0</v8:Length>
+					<v8:AllowedLength>Variable</v8:AllowedLength>
+				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ИспользоватьТочнуюАнонимизацию" id="17">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+	</Attributes>
 	<Commands>
 		<Command name="Подключиться" id="1">
 			<Action>Подключиться</Action>
@@ -446,6 +721,24 @@
 		</Command>
 		<Command name="СгенерироватьИдентификаторКанала" id="4">
 			<Action>СгенерироватьИдентификаторКанала</Action>
+		</Command>
+		<Command name="ОбновитьМаппинги" id="5">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Обновить</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ОбновитьМаппинги</Action>
+		</Command>
+		<Command name="ОткрытьНастройкиТочнойАнонимизации" id="6">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Правила анонимизации...</v8:content>
+				</v8:item>
+			</Title>
+			<Action>ОткрытьНастройкиТочнойАнонимизации</Action>
 		</Command>
 	</Commands>
 	<Events>

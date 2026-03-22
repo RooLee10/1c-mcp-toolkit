@@ -8,4 +8,8 @@ services:
       - TIMEOUT=180 # Timeout for waiting 1C response    
       - ALLOW_DANGEROUS_WITH_APPROVAL=true  # Включить режим подтверждения опасных операций
       - RESPONSE_FORMAT=toon  # Формат ответов: toon (по умолчанию) или json
+      - ANONYMIZATION_ENABLED=false      
+      - ANONYMIZATION_RADICAL_MODE=false
+      - ANONYMIZATION_NER_ENABLED=false
+      - ANONYMIZATION_DICTIONARY_ENABLED=true
     restart: unless-stopped

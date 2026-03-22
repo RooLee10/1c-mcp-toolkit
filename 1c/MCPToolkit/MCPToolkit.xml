@@ -25,9 +25,14 @@
 		</Properties>
 		<ChildObjects>
 			<Form>Форма</Form>
+			<Form>ФормаНастройкиТочнойАнонимизации</Form>
 			<Form>ФормаПодтверждения</Form>
 			<Template>MCPHttpTransport</Template>
+			<Template>НастройкиТочнойАнонимизацииПоУмолчанию</Template>
 			<Template>ToonConverter</Template>
+			<Template>QueryLineageAnalyzer</Template>
+			<Template>RegexHelper</Template>
+			<Template>НастройкиRegexПоУмолчанию</Template>
 		</ChildObjects>
 	</ExternalDataProcessor>
 </MetaDataObject>

@@ -38,6 +38,7 @@ from .channel_middleware import ChannelMiddleware
 from .query_encoding_middleware import QueryEncodingMiddleware
 from .channel_sse_transport import ChannelAwareSseTransport
 from .rest_api import execute_query_handler, execute_code_handler, get_metadata_handler, get_event_log_handler, get_object_by_link_handler, get_link_of_object_handler, find_references_to_object_handler, get_access_rights_handler
+from .anonymizer.registry import AnonymizerRegistry
 
 # Configure logging
 logging.basicConfig(
@@ -391,6 +392,33 @@ async def health_check(request: Request) -> JSONResponse:
     return JSONResponse(content=response_data)
 
 
+async def anonymization_mappings(request: Request) -> JSONResponse:
+    """
+    Return anonymization token mappings for the specified channel.
+    Used by 1C processing to display the mapping table.
+    """
+    raw_channel = request.query_params.get("channel", DEFAULT_CHANNEL)
+    channel = ChannelRegistry.validate_channel_id(raw_channel)
+
+    if not settings.anonymization_enabled:
+        return JSONResponse(content={
+            "enabled": False, "mappings": [], "stats": {}, "count": 0
+        })
+
+    anon = AnonymizerRegistry.get_if_exists(channel)
+    if anon is None:
+        return JSONResponse(content={
+            "enabled": True, "mappings": [], "stats": {}, "count": 0
+        })
+
+    mappings = anon.mapper.get_mappings()
+    stats = anon.mapper.get_stats()
+
+    return JSONResponse(content={
+        "enabled": True, "mappings": mappings, "stats": stats, "count": len(mappings),
+    })
+
+
 async def mcp_debug(request: Request) -> JSONResponse:
     """
     Debug endpoint to check MCP requests.
@@ -423,6 +451,7 @@ routes = [
     Route("/mcp/message", LegacySseMessageApp(), methods=["POST"]),
     Route("/1c/poll", poll_command, methods=["GET"]),
     Route("/1c/result", receive_result, methods=["POST"]),
+    Route("/1c/anonymization_mappings", anonymization_mappings, methods=["GET"]),
     Route("/health", health_check, methods=["GET"]),
     # REST API routes
     Route("/api/execute_query", execute_query_handler, methods=["POST"]),

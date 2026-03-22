@@ -24,6 +24,7 @@ from pydantic import ValidationError
 
 from .command_queue import channel_command_queue
 from .config import settings
+from .anonymizer import AnonymizerRegistry
 from .response_formatter import format_tool_result, is_toon_available
 from .tools import (
     ExecuteQueryParams,
@@ -49,6 +50,33 @@ if settings.response_format == "toon" and not is_toon_available():
 
 
 _ZERO_WIDTH_CHARS = {"\u200b", "\u200c", "\u200d", "\ufeff"}
+
+
+def _strip_internal_execute_query_schema_fields(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove internal precise-anonymization fields from outward-facing execute_query schema."""
+    if not isinstance(result, dict):
+        return result
+    schema = result.get("schema")
+    if not isinstance(schema, dict):
+        return result
+    columns = schema.get("columns")
+    if not isinstance(columns, list):
+        return result
+
+    cleaned = dict(result)
+    cleaned_schema = dict(schema)
+    cleaned_columns: List[Dict[str, Any]] = []
+    for column in columns:
+        if not isinstance(column, dict):
+            cleaned_columns.append(column)
+            continue
+        cleaned_column = dict(column)
+        cleaned_column.pop("anonymization_mode", None)
+        cleaned_column.pop("reference_presentation_mode", None)
+        cleaned_columns.append(cleaned_column)
+    cleaned_schema["columns"] = cleaned_columns
+    cleaned["schema"] = cleaned_schema
+    return cleaned
 
 
 def _normalize_for_scan(text: str) -> str:
@@ -254,8 +282,27 @@ async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = 
             "1C processing might be disconnected or slow."
         )
     
+    # Determine if anonymization should be applied for this tool
+    _do_anon = (
+        settings.anonymization_enabled
+        and tool in settings.anonymization_tools
+    )
+    requested_schema = bool(params.get("include_schema", False)) if tool == "execute_query" else False
+
+    # De-tokenize params before sending to 1C
+    if _do_anon:
+        anon = AnonymizerRegistry.get(channel)
+        await AnonymizerRegistry.ensure_dictionary_loaded(channel)
+        params = anon.detokenize_params(params)
+
+    params_for_1c = dict(params)
+    if _do_anon and tool == "execute_query":
+        # Schema is needed internally for anonymization even when the agent did not
+        # request it. Visibility in the final response is handled after anonymization.
+        params_for_1c["include_schema"] = True
+
     # Add command to channel queue
-    command_id = await channel_command_queue.add_command(channel, tool, params)
+    command_id = await channel_command_queue.add_command(channel, tool, params_for_1c)
     logger.info(f"Command {command_id} added to channel '{channel}': tool={tool}")
     
     try:
@@ -266,9 +313,18 @@ async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = 
             timeout=float(settings.timeout)
         )
         logger.info(f"Command {command_id} completed successfully on channel '{channel}'")
-        
+
+        # Anonymize response before formatting
+        if _do_anon:
+            result = anon.anonymize_response(result, tool_name=tool)
+
+        if _do_anon and tool == "execute_query" and not requested_schema and isinstance(result, dict):
+            result = dict(result)
+            result.pop("schema", None)
+        elif _do_anon and tool == "execute_query" and requested_schema and isinstance(result, dict):
+            result = _strip_internal_execute_query_schema_fields(result)
+
         # Format result based on configuration (Requirement 2.1, 2.2, 5.1, 5.2, 5.3)
-        # Applies TOON or JSON formatting to the result data
         return format_tool_result(result, settings.response_format)
     except asyncio.TimeoutError:
         # Validates: Requirement 6.2 - clear error message when 1C not responding
@@ -1215,6 +1271,24 @@ async def get_access_rights(
     result = await _execute_1c_command("get_access_rights", params_dict, channel=channel)
 
     return result
+
+
+def _apply_anonymization_notice_to_tools() -> None:
+    if not settings.anonymization_enabled:
+        return
+    notice = (
+        "\n\nNOTE: Anonymization is enabled for this tool. "
+        "Some returned values (person names, organization names, TINs, and other "
+        "personal data) are replaced with anonymous tokens in the format "
+        "[CATEGORY-NNNNN] (e.g. [ORG-00001], [PER-00042], [INN-00001]). "
+        "Tokens are stable within the current session. "
+        "Do not attempt to interpret these tokens as meaningful data."
+    )
+    for tool in mcp._tool_manager.list_tools():
+        if tool.name in settings.anonymization_tools:
+            tool.description = (tool.description or "") + notice
+
+_apply_anonymization_notice_to_tools()
 
 
 def get_mcp_server() -> FastMCP:
