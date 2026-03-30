@@ -94,7 +94,7 @@
 			<Title>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>Явные правила применяются только к execute_query. Неотмеченные поля остаются в режиме по умолчанию.</v8:content>
+					<v8:content>Правила анонимизации применяются к execute_query, execute_code, get_object_by_link, find_references_to_object, get_event_log и get_access_rights. Подробное описание в документации.</v8:content>
 				</v8:item>
 			</Title>
 			<HorizontalStretch>true</HorizontalStretch>
