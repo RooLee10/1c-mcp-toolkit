@@ -293,7 +293,7 @@ async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = 
     if _do_anon:
         anon = AnonymizerRegistry.get(channel)
         await AnonymizerRegistry.ensure_dictionary_loaded(channel)
-        params = anon.detokenize_params(params)
+        params = anon.detokenize_params_for_tool(params, tool)
 
     params_for_1c = dict(params)
     if _do_anon and tool == "execute_query":

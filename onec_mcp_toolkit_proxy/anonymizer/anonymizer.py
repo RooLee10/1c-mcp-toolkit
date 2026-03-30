@@ -108,6 +108,18 @@ class Anonymizer:
                     source_last_hints_by_key=source_last_hints_by_key,
                     column_policy_by_key=column_policy_by_key,
                 )
+            elif tool_name == "get_access_rights" and k == "data":
+                if isinstance(v, dict) and isinstance(v.get("user"), dict):
+                    user = v["user"]
+                    saved = {f: user[f] for f in ("name", "full_name") if f in user and isinstance(user[f], str) and user[f]}
+                    v = {**v, "user": {fk: fv for fk, fv in user.items() if fk not in saved}}
+                    walked = self._walk(v, parent_key=k, allow_ner=self._allow_ner_for_top_level_key(k, tool_name))
+                    if saved and isinstance(walked, dict) and isinstance(walked.get("user"), dict):
+                        for field, raw in saved.items():
+                            walked["user"][field] = self._mapper.tokenize(raw, "PER")
+                    out[k] = walked
+                else:
+                    out[k] = self._walk(v, parent_key=k, allow_ner=self._allow_ner_for_top_level_key(k, tool_name))
             else:
                 out[k] = self._walk(
                     v,
@@ -302,6 +314,30 @@ class Anonymizer:
     def detokenize_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Replace tokens in agent request params with real values."""
         return self._walk_detokenize(params)
+
+    # Поля с кодом/запросом и соответствующий режим детокенизации
+    _CODE_FIELDS: dict = {
+        "execute_code":  ("code",  "bsl"),
+        "execute_query": ("query", "query"),
+    }
+
+    def detokenize_params_for_tool(self, params: Dict[str, Any], tool: str) -> Dict[str, Any]:
+        """De-tokenize params with tool-specific quote escaping for code/query fields."""
+        entry = self._CODE_FIELDS.get(tool)
+        if entry is None:
+            return self._walk_detokenize(params)
+
+        code_field, mode = entry
+        result = {}
+        for k, v in params.items():
+            if k == code_field and isinstance(v, str):
+                if mode == "bsl":
+                    result[k] = self._mapper.detokenize_escape_double(v)
+                else:
+                    result[k] = self._mapper.detokenize_for_query(v)
+            else:
+                result[k] = self._walk_detokenize(v)
+        return result
 
     def _extract_source_last(self, source: str) -> str:
         """Return the anonymization hint segment from a source string.

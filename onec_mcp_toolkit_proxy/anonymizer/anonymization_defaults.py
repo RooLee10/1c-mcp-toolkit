@@ -14,6 +14,7 @@ DEFAULT_ANONYMIZATION_TOOLS = (
     "get_object_by_link",
     "get_event_log",
     "find_references_to_object",
+    "get_access_rights",
 )
 
 
