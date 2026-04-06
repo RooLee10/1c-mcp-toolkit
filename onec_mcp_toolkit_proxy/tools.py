@@ -269,6 +269,23 @@ class GetMetadataParams(BaseModel):
         )
     )
 
+    attribute_mask: Optional[str] = Field(
+        default=None,
+        description=(
+            "Маска поиска по имени или синониму атрибута (реквизита/измерения/ресурса) "
+            "(регистронезависимый поиск подстроки). "
+            "Результат в том же формате что list mode: data=[{ПолноеИмя, Синоним},...], count, has_more и т.д. "
+            "ПолноеИмя использует имена сегментов в единственном числе (Реквизит, Измерение, Ресурс, ТабличнаяЧасть) — можно передать в filter (round-trip: data[0]['ПолноеИмя']). "
+            "Совместим с: meta_type, name_mask, filter (объект), extension_name (имя расширения). "
+            "extension_name='' (список расширений) имеет приоритет над attribute_mask. "
+            "НЕСОВМЕСТИМ с sections (вернёт ошибку). / "
+            "Search mask for attribute name/synonym (case-insensitive). "
+            "Returns list contract: data=[{ПолноеИмя, Синоним},...]. ПолноеИмя can be used as filter. "
+            "INCOMPATIBLE with sections (raises error)."
+        ),
+        examples=["контраг", "номенклат", "дата"]
+    )
+
     @field_validator('filter')
     @classmethod
     def validate_filter(cls, v: Optional[str]) -> Optional[str]:
@@ -366,8 +383,34 @@ class GetMetadataParams(BaseModel):
     @model_validator(mode='after')
     def validate_sections_consistency(self) -> 'GetMetadataParams':
         """sections can be used only in detail mode (with non-empty filter)."""
+        # attribute_mask + sections is handled by validate_attribute_mask_sections
+        # with a more specific error message — skip the generic check here.
+        if self.attribute_mask is not None:
+            return self
         if self.sections is not None and not self.filter:
             raise ValueError("sections parameter requires filter parameter")
+        return self
+
+    @field_validator('attribute_mask')
+    @classmethod
+    def validate_attribute_mask(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None  # whitespace-only → None, не передаётся в 1С
+        return stripped
+
+    @model_validator(mode='after')
+    def validate_attribute_mask_sections(self) -> 'GetMetadataParams':
+        """attribute_mask is incompatible with sections."""
+        if self.attribute_mask is not None and self.sections is not None:
+            raise ValueError(
+                "attribute_mask is incompatible with sections: "
+                "attribute_mask returns list mode (data=[{ПолноеИмя,Синоним},...]), "
+                "sections only apply to detail mode (filter=Type.Name). "
+                "Round-trip: pass data[0]['ПолноеИмя'] as filter, then use sections."
+            )
         return self
 
 
@@ -1116,7 +1159,7 @@ EXECUTE_CODE_SCHEMA = {
 
 GET_METADATA_SCHEMA = {
     "name": "get_metadata",
-    "description": "Возвращает информацию о метаданных базы 1С. Без параметров (filter/meta_type/name_mask) возвращает сводку: data (Тип + Количество по корневым типам) + configuration (информация о конфигурации/версии платформы, если доступна) отдельным JSON-полем верхнего уровня. С параметром filter возвращает детальную структуру конкретного объекта (по полному имени) и поддерживает выбор секций через sections; в детальной карточке объекта тип метаданных возвращается в поле ТипОбъектаМетаданных (чтобы не конфликтовать с properties.Тип). filter также поддерживает навигацию к элементам коллекций объекта (реквизитам, измерениям, ресурсам, табличным частям и их реквизитам) по полному пути метаданных в формате ПолноеИмя() (имена в единственном числе, например, 'Справочник.Контрагенты.Реквизит.ИНН' или 'Документ.Реализация.ТабличнаяЧасть.Товары.Реквизит.Номенклатура'); при указании sections=['properties'] для элемента возвращаются его расширенные свойства (ПроверкаЗаполнения, ЗначениеЗаполнения, Ведущее, Использование и др.). Свойство СвязьПоТипу (TypeLink) в properties сериализуется как объект {ПутьКДанным, ЭлементСвязи}; ЭлементСвязи не выводится, если равен 0. СвязьПоТипу может быть пустым ({}), если связь не настроена. Свойство СвязиПараметровВыбора (ChoiceParameterLinks) в properties сериализуется как массив объектов {Имя, ПутьКДанным, ИзменениеЗначения}. Спец-обработка: для ОбщийРеквизит свойство Состав (СоставОбщегоРеквизита) в properties возвращается в виде массива элементов {Метаданные, Использование, УсловноеРазделение}; для ПланОбмена свойство Состав (СоставПланаОбмена) в properties возвращается в виде массива элементов {Метаданные, АвтоРегистрация}; для ФункциональнаяОпция свойство Состав (СоставФункциональнойОпции) в properties возвращается в виде массива элементов {Объект}. Параметры meta_type и/или name_mask возвращают список объектов (для meta_type можно указать '*' чтобы перечислить объекты всех корневых типов). В режиме списка элементы содержат ПолноеИмя и Синоним; результаты стабильно сортируются по ПолноеИмя и поддерживают постраничный просмотр через offset. В режиме списка в ответе всегда присутствуют поля truncated/limit/returned/count (где count — сколько всего найдено до пагинации), а также offset/has_more/next_offset; truncated/has_more показывают, есть ли ещё результаты. Параметр extension_name позволяет работать с расширениями: не указан - основная конфигурация, '' - список расширений, 'Имя' - работа с конкретным расширением (без filter/meta_type/name_mask возвращает сводку по типам внутри расширения; для полного списка используйте meta_type='*').",
+    "description": "Возвращает информацию о метаданных базы 1С. Без параметров (filter/meta_type/name_mask) возвращает сводку: data (Тип + Количество по корневым типам) + configuration (информация о конфигурации/версии платформы, если доступна) отдельным JSON-полем верхнего уровня. С параметром filter возвращает детальную структуру конкретного объекта (по полному имени) и поддерживает выбор секций через sections; в детальной карточке объекта тип метаданных возвращается в поле ТипОбъектаМетаданных (чтобы не конфликтовать с properties.Тип). filter также поддерживает навигацию к элементам коллекций объекта (реквизитам, измерениям, ресурсам, табличным частям и их реквизитам) по полному пути метаданных в формате ПолноеИмя() (имена в единственном числе, например, 'Справочник.Контрагенты.Реквизит.ИНН' или 'Документ.Реализация.ТабличнаяЧасть.Товары.Реквизит.Номенклатура'); при указании sections=['properties'] для элемента возвращаются его расширенные свойства (ПроверкаЗаполнения, ЗначениеЗаполнения, Ведущее, Использование и др.). Свойство СвязьПоТипу (TypeLink) в properties сериализуется как объект {ПутьКДанным, ЭлементСвязи}; ЭлементСвязи не выводится, если равен 0. СвязьПоТипу может быть пустым ({}), если связь не настроена. Свойство СвязиПараметровВыбора (ChoiceParameterLinks) в properties сериализуется как массив объектов {Имя, ПутьКДанным, ИзменениеЗначения}. Спец-обработка: для ОбщийРеквизит свойство Состав (СоставОбщегоРеквизита) в properties возвращается в виде массива элементов {Метаданные, Использование, УсловноеРазделение}; для ПланОбмена свойство Состав (СоставПланаОбмена) в properties возвращается в виде массива элементов {Метаданные, АвтоРегистрация}; для ФункциональнаяОпция свойство Состав (СоставФункциональнойОпции) в properties возвращается в виде массива элементов {Объект}. Параметры meta_type и/или name_mask возвращают список объектов (для meta_type можно указать '*' чтобы перечислить объекты всех корневых типов). В режиме списка элементы содержат ПолноеИмя и Синоним; результаты стабильно сортируются по ПолноеИмя и поддерживают постраничный просмотр через offset. В режиме списка в ответе всегда присутствуют поля truncated/limit/returned/count (где count — сколько всего найдено до пагинации), а также offset/has_more/next_offset; truncated/has_more показывают, есть ли ещё результаты. Параметр extension_name позволяет работать с расширениями: не указан - основная конфигурация, '' - список расширений, 'Имя' - работа с конкретным расширением (без filter/meta_type/name_mask возвращает сводку по типам внутри расширения; для полного списка используйте meta_type='*'). attribute_mask searches all attributes (реквизиты/измерения/ресурсы and their ТЧ) by name/synonym substring. Returns same list contract as meta_type/name_mask mode: data is array of {ПолноеИмя, Синоним} objects (NOT strings). ПолноеИмя uses singular segment format (Реквизит, Измерение, etc.) and can be passed directly to filter for details (round-trip: data[0][\"ПолноеИмя\"]). next_offset = offset + returned. filter must be root object Тип.Имя (not collection element path). Compatible with meta_type, name_mask, filter, extension_name; extension_name='' (list extensions) takes priority. INCOMPATIBLE with sections (returns error). Round-trip for details: pass data[0][\"ПолноеИмя\"] as filter, then use sections.",
     "inputSchema": {
         "type": "object",
         "properties": {
@@ -1124,7 +1167,7 @@ GET_METADATA_SCHEMA = {
                 "type": "string",
                 "description": (
                     "Фильтр: полное имя объекта метаданных (например, 'Справочник.Номенклатура') "
-                    "или полный путь к элементу коллекции (имена в единственном числе — формат ПолноеИмя()): "
+                    "или полный путь к элементу коллекции (сегменты в единственном числе: Реквизит, Измерение, Ресурс, ТабличнаяЧасть): "
                     "'Тип.Объект.Реквизит.Имя', 'Тип.Объект.Измерение.Имя', 'Тип.Объект.Ресурс.Имя', "
                     "'Тип.Объект.РеквизитАдресации.Имя', 'Тип.Объект.СтандартныйРеквизит.Имя', "
                     "'Тип.Объект.ТабличнаяЧасть.ИмяТЧ', "
@@ -1177,6 +1220,20 @@ GET_METADATA_SCHEMA = {
                     "Имя расширения: не указано - основная конфигурация, "
                     "'' - список расширений, 'Имя' - объекты расширения. "
                     "Whitespace-only запрещён."
+                )
+            },
+            "attribute_mask": {
+                "type": "string",
+                "description": (
+                    "Search mask for attribute name/synonym (case-insensitive substring). "
+                    "Returns list contract: data=[{ПолноеИмя, Синоним}, ...], "
+                    "truncated, limit, returned, count, offset, has_more, next_offset. "
+                    "ПолноеИмя is in singular format (Реквизит, Измерение) — usable as filter. "
+                    "Round-trip: data[0]['ПолноеИмя'] → filter. "
+                    "When combined with filter, filter must be Type.Name (not element path). "
+                    "Compatible with meta_type, name_mask, filter, extension_name. "
+                    "INCOMPATIBLE with sections (returns error — use round-trip instead: "
+                    "pass data[0]['ПолноеИмя'] as filter, then use sections)."
                 )
             }
         }
@@ -1430,6 +1487,75 @@ FIND_REFERENCES_TO_OBJECT_SCHEMA = {
     }
 }
 
+GET_BSL_SYNTAX_HELP_SCHEMA = {
+    "name": "get_bsl_syntax_help",
+    "description": (
+        "Get syntax reference for 1C BSL language.\n"
+        "Search by keywords to find built-in functions, methods, types and language constructs.\n"
+        "Returns candidates (unique breadcrumb paths) and Markdown content when exactly one breadcrumb matches.\n"
+        "Candidate paths (e.g. \"Массив/Методы/Найти\") and Markdown link targets from content (format: [Title](topic:Path)) can be used as keywords for exact lookup — pass the full string including the topic: prefix as-is.\n"
+        "When searching for members of a type, include \"Методы\", \"Свойства\", or \"Конструкторы\" in keywords.\n"
+        "Supports pagination: use limit (default 100) and offset (default 0) to page through results.\n"
+        "Response includes total, offset, limit, has_more. "
+        "If has_more is true, call again with offset += limit to get the next page.\n"
+        "If multiple candidates are returned — add more specific keywords to narrow down, "
+        "or use pagination to browse all matches.\n"
+        "When exactly one candidate matches, content may be paginated. "
+        "Response includes content_page (current page), content_total_pages, content_has_more. "
+        "If content_has_more is true, call again with content_page + 1 to get the next page."
+    ),
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "keywords": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Search keywords or single full breadcrumb to follow a link",
+            },
+            "match": {
+                "type": "string",
+                "enum": ["all", "any"],
+                "default": "all",
+                "description": "Keyword matching: all (default) or any",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "Maximum number of candidates to return (1–300, default 100).",
+                "default": 100,
+            },
+            "offset": {
+                "type": "integer",
+                "description": "Number of candidates to skip (default 0). For next page use offset += limit.",
+                "default": 0,
+            },
+            "content_page": {
+                "type": "integer",
+                "description": "Page number of content (1-based, default 1). If content_has_more is true, call again with content_page + 1.",
+                "default": 1,
+            },
+        },
+        "required": ["keywords"],
+    },
+}
+
+
+class GetBslSyntaxHelpParams(BaseModel):
+    keywords: List[str] = Field(..., min_length=1)
+    match: Literal["all", "any"] = "all"
+    limit: int = Field(default=100, ge=1, le=300)
+    offset: int = Field(default=0, ge=0, le=1_000_000)
+    content_page: int = Field(default=1, ge=1)
+
+    @field_validator("keywords")
+    @classmethod
+    def validate_keywords(cls, v: List[str]) -> List[str]:
+        # Trim and filter blank strings (mirrors parsers.py build_candidates_by_keywords)
+        cleaned = [kw.strip() for kw in v if kw and kw.strip()]
+        if not cleaned:
+            raise ValueError("keywords must contain at least one non-empty string")
+        return cleaned
+
+
 # List of all tool schemas
 ALL_TOOL_SCHEMAS = [
     EXECUTE_QUERY_SCHEMA,
@@ -1439,7 +1565,8 @@ ALL_TOOL_SCHEMAS = [
     GET_OBJECT_BY_LINK_SCHEMA,
     GET_LINK_OF_OBJECT_SCHEMA,
     FIND_REFERENCES_TO_OBJECT_SCHEMA,
-    GET_ACCESS_RIGHTS_SCHEMA
+    GET_ACCESS_RIGHTS_SCHEMA,
+    GET_BSL_SYNTAX_HELP_SCHEMA,
 ]
 
 
@@ -1490,7 +1617,8 @@ def validate_get_metadata_params(
     limit: int = 100,
     sections: Optional[List[str]] = None,
     offset: int = 0,
-    extension_name: Optional[str] = None
+    extension_name: Optional[str] = None,
+    attribute_mask: Optional[str] = None
 ) -> GetMetadataParams:
     """
     Validate get_metadata parameters using Pydantic model.
@@ -1503,6 +1631,7 @@ def validate_get_metadata_params(
         sections: Optional list of sections to include in detailed response
         offset: Offset for pagination in list mode
         extension_name: Optional extension name (None=main config, ""=list extensions, "Name"=work with a specific extension)
+        attribute_mask: Optional search mask for attribute name/synonym (case-insensitive)
 
     Returns:
         Validated GetMetadataParams instance
@@ -1517,7 +1646,8 @@ def validate_get_metadata_params(
         limit=limit,
         sections=sections,
         offset=offset,
-        extension_name=extension_name
+        extension_name=extension_name,
+        attribute_mask=attribute_mask
     )
 
 

@@ -234,6 +234,196 @@
 							</Title>
 							<ExtendedTooltip name="ФлагРазрешатьОпасныеОперацииСПодтверждениемРасширеннаяПодсказка" id="54"/>
 						</CheckBoxField>
+						<UsualGroup name="ГруппаМCPИнструменты" id="124">
+							<Title>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>MCP инструменты</v8:content>
+								</v8:item>
+							</Title>
+							<Group>AlwaysHorizontal</Group>
+							<Representation>None</Representation>
+							<Behavior>Collapsible</Behavior>
+							<Collapsed>true</Collapsed>
+							<ControlRepresentation>Picture</ControlRepresentation>
+							<ExtendedTooltip name="ГруппаМCPИнструментыРасширеннаяПодсказка" id="125"/>
+							<ChildItems>
+								<UsualGroup name="ГруппаИнструменты1" id="126">
+									<Group>Vertical</Group>
+									<Representation>None</Representation>
+									<ShowTitle>false</ShowTitle>
+									<ExtendedTooltip name="ГруппаИнструменты1РасширеннаяПодсказка" id="127"/>
+									<ChildItems>
+										<CheckBoxField name="ПолеИнструментExecuteQuery" id="128">
+											<DataPath>ИнструментВключен_ExecuteQuery</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>execute_query</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментExecuteQueryРасширеннаяПодсказка" id="129"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetEventLog" id="136">
+											<DataPath>ИнструментВключен_GetEventLog</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_event_log</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetEventLogРасширеннаяПодсказка" id="137"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментFindReferences" id="144">
+											<DataPath>ИнструментВключен_FindReferences</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>find_references_to_object</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментFindReferencesРасширеннаяПодсказка" id="145"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментSubmitDeanon" id="152">
+											<DataPath>ИнструментВключен_SubmitDeanon</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>submit_for_deanonymization</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментSubmitDeanonРасширеннаяПодсказка" id="153"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+									</ChildItems>
+								</UsualGroup>
+								<UsualGroup name="ГруппаИнструменты2" id="134">
+									<Group>Vertical</Group>
+									<Representation>None</Representation>
+									<ShowTitle>false</ShowTitle>
+									<ExtendedTooltip name="ГруппаИнструменты2РасширеннаяПодсказка" id="135"/>
+									<ChildItems>
+										<CheckBoxField name="ПолеИнструментExecuteCode" id="130">
+											<DataPath>ИнструментВключен_ExecuteCode</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>execute_code</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментExecuteCodeРасширеннаяПодсказка" id="131"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetObjectByLink" id="138">
+											<DataPath>ИнструментВключен_GetObjectByLink</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_object_by_link</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetObjectByLinkРасширеннаяПодсказка" id="139"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetAccessRights" id="146">
+											<DataPath>ИнструментВключен_GetAccessRights</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_access_rights</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetAccessRightsРасширеннаяПодсказка" id="147"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+									</ChildItems>
+								</UsualGroup>
+								<UsualGroup name="ГруппаИнструменты3" id="142">
+									<Group>Vertical</Group>
+									<Representation>None</Representation>
+									<ShowTitle>false</ShowTitle>
+									<ExtendedTooltip name="ГруппаИнструменты3РасширеннаяПодсказка" id="143"/>
+									<ChildItems>
+										<CheckBoxField name="ПолеИнструментGetMetadata" id="132">
+											<DataPath>ИнструментВключен_GetMetadata</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_metadata</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetMetadataРасширеннаяПодсказка" id="133"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetLinkOfObject" id="140">
+											<DataPath>ИнструментВключен_GetLinkOfObject</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_link_of_object</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetLinkOfObjectРасширеннаяПодсказка" id="141"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetBslSyntaxHelp" id="148">
+											<DataPath>ИнструментВключен_GetBslSyntaxHelp</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_bsl_syntax_help</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetBslSyntaxHelpРасширеннаяПодсказка" id="149"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+									</ChildItems>
+								</UsualGroup>
+							</ChildItems>
+						</UsualGroup>
 					</ChildItems>
 				</UsualGroup>
 				<UsualGroup name="ГруппаАвтоРазрешение" id="24">
@@ -810,6 +1000,56 @@
 					<v8:Length>0</v8:Length>
 					<v8:AllowedLength>Variable</v8:AllowedLength>
 				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_ExecuteQuery" id="21">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_ExecuteCode" id="22">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetMetadata" id="23">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetEventLog" id="24">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetObjectByLink" id="25">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetLinkOfObject" id="26">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_FindReferences" id="27">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetAccessRights" id="28">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_GetBslSyntaxHelp" id="29">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_SubmitDeanon" id="30">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
 			</Type>
 		</Attribute>
 	</Attributes>

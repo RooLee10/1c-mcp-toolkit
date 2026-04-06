@@ -2,13 +2,14 @@
 name: calling-1c-rest-api-via-curl
 description: >
   Access a 1C:Enterprise database through the 1C MCP Toolkit REST API using curl.
-  Provides 9 endpoints under /api/ for querying data (execute_query), exploring metadata
+  Provides 10 endpoints under /api/ for querying data (execute_query), exploring metadata
   (get_metadata), reading event logs (get_event_log), checking access rights
   (get_access_rights), finding object references (find_references_to_object), navigating
   objects by link (get_object_by_link, get_link_of_object), executing 1C code
-  (execute_code), and submitting text for de-anonymization (submit_for_deanonymization, when
-  anonymization is enabled). Use when the agent needs to interact with a 1C database via HTTP but
-  does not speak MCP. Supports channel isolation for multi-database routing.
+  (execute_code), looking up BSL language reference (get_bsl_syntax_help), and submitting
+  text for de-anonymization (submit_for_deanonymization, when anonymization is enabled).
+  Use when the agent needs to interact with a 1C database via HTTP but does not speak MCP.
+  Supports channel isolation for multi-database routing.
 ---
 
 # 1C MCP Toolkit REST API via curl
@@ -86,7 +87,7 @@ curl -sS --noproxy $BASE_HOST "$BASE_URL/api/execute_query?channel=dev" $J -d '{
 
 ### 1. get_metadata — `GET/POST /api/get_metadata`
 
-Explore database structure. Four modes:
+Explore database structure. Five modes:
 
 | Mode | Params | Returns |
 |------|--------|---------|
@@ -94,8 +95,9 @@ Explore database structure. Four modes:
 | **List** | `meta_type` and/or `name_mask` | Array of `{ПолноеИмя, Синоним}` with pagination |
 | **Detail** | `filter` = full object name | Full object structure (attributes, dimensions, tabular sections) |
 | **Collection element** | `filter` = full path to element | Single element info (e.g., `Справочник.Контрагенты.Реквизит.ИНН`) |
+| **Attribute search** | `attribute_mask` | Array of `{ПолноеИмя, Синоним}` for all matching attributes across all objects |
 
-Key params: `filter`, `meta_type` (string or array, `"*"` for all types), `name_mask`, `sections` (requires filter): `properties`/`forms`/`commands`/`layouts`/`predefined`/`movements`/`characteristics` (`movements` only for `Документ`), `limit` (default 100, max 1000), `offset`, `extension_name`.
+Key params: `filter`, `meta_type` (string or array, `"*"` for all types), `name_mask`, `attribute_mask`, `sections` (requires filter, incompatible with `attribute_mask`): `properties`/`forms`/`commands`/`layouts`/`predefined`/`movements`/`characteristics` (`movements` only for `Документ`), `limit` (default 100, max 1000), `offset`, `extension_name`.
 
 Request rules:
 - **GET**: parameters come from the URL query string; request body is ignored
@@ -121,6 +123,14 @@ curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
 # Collection element filter (Mode 3a)
 curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
   -d '{"filter":"Справочник.Контрагенты.Реквизит.ИНН","sections":["properties"]}'
+
+# Attribute search — find all attributes whose name/synonym contains "контраг"
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"контраг"}'
+
+# Attribute search scoped to one object
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"дата","filter":"Документ.Реализация"}'
 ```
 
 ---
@@ -307,7 +317,37 @@ Response:
 
 ---
 
-### 9. submit_for_deanonymization — `POST /api/submit_for_deanonymization`
+### 9. get_bsl_syntax_help — `POST /api/get_bsl_syntax_help`
+
+Search the built-in BSL language reference: functions, methods, types, language constructs. Returns candidates (breadcrumb paths) and, when exactly one matches, Markdown content. Requires SyntaxHelpReader component loaded on the 1C side.
+
+Key params: `keywords` (**required**, string[]) — search terms or exact path/link; `match` (`"all"`/`"any"`, default `"all"`); `limit`/`offset` for candidate pagination; `content_page` for content pagination.
+
+```sh
+# Search by keyword
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Найти","Массив"]}'
+
+# Exact lookup by candidate path
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Массив/Методы/Найти"]}'
+
+# Next content page
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Запрос"],"content_page":2}'
+```
+
+Response (multiple candidates): `{"success": true, "data": {"candidates": [...], "total": N, "content": null, ...}}`
+
+Response (one match): `{"success": true, "data": {"candidates": [...], "content": "...", "content_page": 1, "content_total_pages": N, "content_has_more": false, ...}}`
+
+**Content pagination:** fields `content_page`, `content_total_pages`, `content_has_more` appear only when `content` is not null. If `content_has_more` is `true` — call again with `content_page + 1`.
+
+**Links in content:** Markdown links have format `[Title](topic:Path)`. To follow — pass the full target **including** `topic:` prefix as a keyword.
+
+---
+
+### 10. submit_for_deanonymization — `POST /api/submit_for_deanonymization`
 
 Submit the final user-facing response for de-anonymization display. **Available only when anonymization is enabled.** Returns `{"received": true}` on success (not `{"success": true, "data": ...}`).
 

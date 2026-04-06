@@ -35,7 +35,8 @@ from .tools import (
     validate_get_object_by_link_params,
     validate_get_link_of_object_params,
     validate_find_references_to_object_params,
-    validate_get_access_rights_params
+    validate_get_access_rights_params,
+    GetBslSyntaxHelpParams,
 )
 
 logger = logging.getLogger(__name__)
@@ -581,7 +582,8 @@ async def get_metadata(
     limit: int = 100,
     sections: Optional[List[str]] = None,
     offset: int = 0,
-    extension_name: Optional[str] = None
+    extension_name: Optional[str] = None,
+    attribute_mask: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Get metadata information about 1C database objects.
@@ -608,7 +610,7 @@ async def get_metadata(
        Returns: Full structure with attributes, dimensions, resources, tabular sections
 
     3a. Specific collection element: Use 'filter' with full path to element
-       Collection names are in singular (platform ПолноеИмя() format):
+       Collection names use singular segment names (Реквизит, Измерение, Ресурс, ТабличнаяЧасть):
          filter="Справочник.Контрагенты.Реквизит.ИНН"
          filter="РегистрНакопления.Остатки.Измерение.Номенклатура"
          filter="РегистрНакопления.Остатки.Ресурс.Количество"
@@ -624,6 +626,16 @@ async def get_metadata(
        - extension_name="": get list of all connected extensions
        - extension_name="ExtensionName": work with objects inside the specified extension
 
+    5. Attribute search: Use 'attribute_mask' parameter
+       Find all attributes (реквизиты/измерения/ресурсы/реквизиты ТЧ) whose name or synonym
+       contains the given substring (case-insensitive).
+       Returns same list contract as mode 2: data=[{ПолноеИмя, Синоним},...], count, has_more, etc.
+       ПолноеИмя is in singular format — usable as filter (round-trip: data[0]["ПолноеИмя"]).
+       Compatible with meta_type, name_mask, filter (root object), extension_name (specific).
+       NOTE: extension_name="" (list extensions) takes priority, attribute_mask is ignored.
+       INCOMPATIBLE with sections (returns error). Round-trip for details:
+         pass data[0]["ПолноеИмя"] as filter, then use sections.
+
     Args:
         ctx: MCP Context (injected automatically)
         filter: Full name of object (e.g., "Справочник.Номенклатура") or full path to collection element
@@ -637,6 +649,10 @@ async def get_metadata(
         offset: Offset for pagination in list mode (default: 0)
         extension_name: Extension name (None=main config, ""=list extensions, "Name"=extension objects).
                        Whitespace-only values are rejected.
+        attribute_mask: Search mask for attribute name/synonym (case-insensitive substring).
+                       Returns list contract: data=[{ПолноеИмя, Синоним},...].
+                       ПолноеИмя can be used directly as filter (round-trip).
+                       INCOMPATIBLE with sections (returns error).
 
     Returns:
         Dictionary with:
@@ -688,9 +704,19 @@ async def get_metadata(
 
         # Get details about an object in extension
         get_metadata(extension_name="MyExtension", filter="Справочник.МойСправочник")
+
+        # Find all 'Контрагент' attributes across entire configuration
+        get_metadata(attribute_mask="контраг")
+
+        # Only in documents
+        get_metadata(attribute_mask="контраг", meta_type="Документ")
+
+        # Round-trip: use result as filter for details
+        matches = get_metadata(attribute_mask="контраг")["data"]
+        get_metadata(filter=matches[0]["ПолноеИмя"], sections=["properties"])
     """
     channel = _get_channel_from_context(ctx)
-    logger.info(f"get_metadata on channel '{channel}': filter={filter}, meta_type={meta_type}, name_mask={name_mask}, limit={limit}, offset={offset}, extension_name={extension_name}")
+    logger.info(f"get_metadata on channel '{channel}': filter={filter}, meta_type={meta_type}, name_mask={name_mask}, limit={limit}, offset={offset}, extension_name={extension_name}, attribute_mask={attribute_mask}")
 
     # Validate parameters using Pydantic model
     # Validates: Requirement 6.4 - JSON serialization/deserialization errors with clear messages
@@ -702,7 +728,8 @@ async def get_metadata(
             limit=limit,
             sections=sections,
             offset=offset,
-            extension_name=extension_name
+            extension_name=extension_name,
+            attribute_mask=attribute_mask
         )
     except ValidationError as e:
         error_msg = e.errors()[0]['msg'] if e.errors() else str(e)
@@ -1282,6 +1309,62 @@ async def get_access_rights(
     params_dict = validated.model_dump(exclude_none=True)
     result = await _execute_1c_command("get_access_rights", params_dict, channel=channel)
 
+    return result
+
+
+@mcp.tool()
+async def get_bsl_syntax_help(
+    ctx: Context,
+    keywords: List[str],
+    match: Literal["all", "any"] = "all",
+    limit: int = 100,
+    offset: int = 0,
+    content_page: int = 1,
+) -> Dict[str, Any]:
+    """
+    Get syntax reference for 1C BSL language.
+
+    Search by keywords to find built-in functions, methods, types and language constructs.
+    Returns candidates (unique breadcrumb paths) and Markdown content when exactly one breadcrumb matches.
+    Candidate paths (e.g. "Массив/Методы/Найти") and Markdown link targets from content (format: [Title](topic:Path)) can be used as keywords for exact lookup — pass the full string including the topic: prefix as-is.
+    When searching for members of a type, include "Методы", "Свойства", or "Конструкторы" in keywords.
+    Supports pagination via limit/offset. If has_more is true, call again with offset += limit.
+    When content is returned, it may be paginated.
+    If content_has_more is true, call again with content_page + 1 to get the next page.
+
+    Args:
+        keywords: List of search keywords, or a single candidate path / link from content for exact lookup
+        match: "all" (default) — all keywords must match; "any" — any keyword matches
+        limit: Maximum number of candidates to return (1–300, default 100)
+        offset: Number of candidates to skip for pagination (default 0)
+        content_page: Page number of content to return (1-based, default 1)
+
+    Returns:
+        data.candidates: paged slice of matching breadcrumb paths
+        data.total: total number of matching candidates (before pagination)
+        data.offset: the offset used for this response
+        data.limit: the limit used for this response
+        data.has_more: true if more candidates exist beyond this page
+        data.content: Markdown text page (only when total==1 and offset==0), else null
+        data.content_page: current page of content (only when content is not null)
+        data.content_total_pages: total number of content pages (only when content is not null)
+        data.content_has_more: true if more content pages exist (only when content is not null)
+
+    Example:
+        keywords=["Найти"]
+        keywords=["Найти", "Массив"]
+        keywords=["Массив/Методы/Найти"]
+        keywords=["topic:Массив/Методы/Найти"]
+    """
+    channel = _get_channel_from_context(ctx)
+    try:
+        validated = GetBslSyntaxHelpParams(
+            keywords=keywords, match=match, limit=limit, offset=offset, content_page=content_page
+        )
+    except ValidationError as e:
+        return {"success": False, "error": e.errors()[0]["msg"] if e.errors() else str(e)}
+    result = await _execute_1c_command(
+        "get_bsl_syntax_help", validated.model_dump(), channel=channel)
     return result
 
 

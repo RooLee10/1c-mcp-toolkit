@@ -1,6 +1,6 @@
 # Tools Full Reference
 
-Complete parameter tables, curl examples, and response structures for all 9 REST API endpoints.
+Complete parameter tables, curl examples, and response structures for all 10 REST API endpoints.
 
 > **Convention**: all examples use the variables from Quick Start:
 > ```sh
@@ -29,8 +29,9 @@ Request rules:
 | `name_mask` | string | null | — | Case-insensitive search in name/synonym |
 | `limit` | integer | 100 | 1–1000 | Max objects in list mode |
 | `offset` | integer | 0 | 0–1000000 | Pagination offset in list mode |
-| `sections` | string[] | null | Requires `filter` | Detail sections: `properties`, `forms`, `commands`, `layouts`, `predefined`, `movements`, `characteristics`. Note: `movements` only applies to `Документ` objects — silently ignored for other types |
+| `sections` | string[] | null | Requires `filter`; incompatible with `attribute_mask` | Detail sections: `properties`, `forms`, `commands`, `layouts`, `predefined`, `movements`, `characteristics`. Note: `movements` only applies to `Документ` objects — silently ignored for other types |
 | `extension_name` | string | null | No whitespace-only | `null`=main config, `""`=list extensions, `"Name"`=extension objects |
+| `attribute_mask` | string | null | Incompatible with `sections` | Case-insensitive substring search across all attribute names/synonyms (реквизиты, измерения, ресурсы, реквизиты ТЧ). Returns same list contract as Mode 2. Compatible with `meta_type`, `name_mask`, `filter` (root object only), `extension_name`. `extension_name=""` takes priority (returns extension list, ignores `attribute_mask`). |
 
 ### Mode 1: Summary (no filter/meta_type/name_mask)
 
@@ -143,7 +144,7 @@ Response (detail):
 
 ### Mode 3a: Collection element (filter with full path)
 
-Collection names use the platform `ПолноеИмя()` singular format: `Реквизит`, `Измерение`, `Ресурс`, `ТабличнаяЧасть`, `СтандартныйРеквизит`, `РеквизитАдресации`.
+Collection names use singular segment names: `Реквизит`, `Измерение`, `Ресурс`, `ТабличнаяЧасть`, `СтандартныйРеквизит`, `РеквизитАдресации`.
 
 ```sh
 # Catalog attribute
@@ -211,6 +212,55 @@ Note: for `extension_name="MyExtension"` (specific extension), responses include
   ]
 }
 ```
+
+### Mode 5: Attribute search (attribute_mask)
+
+Search all attribute names/synonyms across all objects (or scoped to one object via `filter`).
+Returns the same list contract as Mode 2. `ПолноеИмя` uses singular segment names and can be passed directly to `filter` for round-trip detail lookup.
+
+```sh
+# Find all attributes whose name or synonym contains "контраг"
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"контраг"}'
+
+# Scoped to one object
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"дата","filter":"Документ.Реализация"}'
+
+# With pagination
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"сумма","limit":50,"offset":0}'
+
+# Round-trip: find attribute, then get its detail
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"attribute_mask":"контраг","limit":1}'
+# → data[0]["ПолноеИмя"] = "Документ.Реализация.Реквизит.Контрагент"
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_metadata?channel=$CHANNEL" $J \
+  -d '{"filter":"Документ.Реализация.Реквизит.Контрагент","sections":["properties"]}'
+```
+
+Response:
+```json
+{
+  "success": true,
+  "truncated": false,
+  "limit": 100,
+  "offset": 0,
+  "returned": 2,
+  "count": 2,
+  "has_more": false,
+  "next_offset": 2,
+  "data": [
+    {"ПолноеИмя": "Документ.Реализация.Реквизит.Контрагент", "Синоним": "Контрагент"},
+    {"ПолноеИмя": "Справочник.Контрагенты.Реквизит.ОсновнойДоговор", "Синоним": "Основной договор"}
+  ]
+}
+```
+
+Notes:
+- **Incompatible with `sections`** — returns error. Use round-trip instead: get `ПолноеИмя` from attribute search, then pass it to `filter` with `sections`.
+- Compatible with `meta_type` (restrict object types), `name_mask` (filter object names), `filter` (restrict to one root object), `extension_name` (specific extension).
+- `extension_name=""` (list extensions) takes priority — `attribute_mask` is ignored in that case.
 
 ---
 
@@ -721,7 +771,111 @@ curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_event_log?channel=$CHANNEL" $J 
 
 ---
 
-## 9. submit_for_deanonymization — `POST /api/submit_for_deanonymization`
+## 9. get_bsl_syntax_help — `POST /api/get_bsl_syntax_help`
+
+Search the built-in BSL language reference. Returns candidates (breadcrumb paths); when exactly one candidate matches, returns Markdown content. Requires SyntaxHelpReader component loaded on the 1C side.
+
+### Parameters
+
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `keywords` | string[] | Yes | — | Non-empty array | Search terms, or a single exact candidate path / link target |
+| `match` | string | No | `"all"` | `"all"` / `"any"` | `"all"`: all keywords must appear; `"any"`: any keyword matches |
+| `limit` | integer | No | 100 | 1–300 | Max candidates per page |
+| `offset` | integer | No | 0 | 0–1000000 | Candidates to skip (pagination) |
+| `content_page` | integer | No | 1 | ≥ 1 | Page of content to return (1-based) |
+
+### Search logic
+
+- Multiple candidates → `content` is `null`. Narrow keywords or use a candidate path directly.
+- Exactly one candidate → `content` contains Markdown reference page.
+- Candidate paths (e.g. `Массив/Методы/Найти`) and link targets from content (`topic:Path`) can be passed as `keywords` for exact lookup — pass the full string including `topic:` prefix as-is.
+
+### Examples
+
+```sh
+# Broad search
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Найти"]}'
+
+# Narrow to methods of a type
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Найти","Массив"]}'
+
+# Exact lookup by candidate path
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Массив/Методы/Найти"]}'
+
+# Follow a link from content (topic: prefix passed as-is)
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["topic:Массив/Методы/Найти"]}'
+
+# Find all methods of a type
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["ТаблицаЗначений","Методы"]}'
+
+# Get next content page
+curl -sS --noproxy $BASE_HOST "$BASE_URL/api/get_bsl_syntax_help?channel=$CHANNEL" $J \
+  -d '{"keywords":["Запрос"],"content_page":2}'
+```
+
+### Response — multiple candidates
+
+```json
+{
+  "success": true,
+  "data": {
+    "candidates": ["Массив/Методы/Найти", "Строка/Методы/Найти"],
+    "total": 2,
+    "offset": 0,
+    "limit": 100,
+    "has_more": false,
+    "content": null
+  }
+}
+```
+
+### Response — one match, single content page
+
+```json
+{
+  "success": true,
+  "data": {
+    "candidates": ["Массив/Методы/Найти"],
+    "total": 1,
+    "offset": 0,
+    "limit": 100,
+    "has_more": false,
+    "content": "# Найти\n\n**Синтаксис:** `Найти(<Что>)`\n\n...",
+    "content_page": 1,
+    "content_total_pages": 1,
+    "content_has_more": false
+  }
+}
+```
+
+### Response — one match, content paginated
+
+```json
+{
+  "success": true,
+  "data": {
+    "candidates": ["Запрос"],
+    "total": 1,
+    "has_more": false,
+    "content": "# Запрос\n\n...",
+    "content_page": 1,
+    "content_total_pages": 4,
+    "content_has_more": true
+  }
+}
+```
+
+Fields `content_page`, `content_total_pages`, `content_has_more` are present **only when `content` is not null**.
+
+---
+
+## 10. submit_for_deanonymization — `POST /api/submit_for_deanonymization`
 
 Submit the final user-facing response for de-anonymization display. **Available only when anonymization is enabled.**
 

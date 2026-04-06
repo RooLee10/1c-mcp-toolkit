@@ -27,6 +27,7 @@ from .tools import (
     validate_get_link_of_object_params,
     validate_find_references_to_object_params,
     validate_get_access_rights_params,
+    GetBslSyntaxHelpParams,
     SubmitForDeanonymizationParams
 )
 from .channel_registry import ChannelRegistry, DEFAULT_CHANNEL
@@ -654,6 +655,7 @@ async def get_metadata_handler(request: Request) -> JSONResponse:
             else meta_type_values
         )
         name_mask = request.query_params.get("name_mask")
+        attribute_mask = request.query_params.get("attribute_mask")
         limit_str = request.query_params.get("limit")
         offset_str = request.query_params.get("offset")
         sections = _parse_csv_or_repeated_query_param(request, "sections")
@@ -715,7 +717,8 @@ async def get_metadata_handler(request: Request) -> JSONResponse:
                 limit=limit,
                 sections=sections,
                 offset=offset,
-                extension_name=extension_name
+                extension_name=extension_name,
+                attribute_mask=attribute_mask
             )
         except ValidationError as e:
             return _validation_error_response(e)
@@ -740,6 +743,7 @@ async def get_metadata_handler(request: Request) -> JSONResponse:
         offset = body.get("offset", 0)
         sections = body.get("sections")
         extension_name = body.get("extension_name")
+        attribute_mask = body.get("attribute_mask")
 
         # Step 5: Validate parameters via Pydantic
         try:
@@ -750,7 +754,8 @@ async def get_metadata_handler(request: Request) -> JSONResponse:
                 limit=limit,
                 sections=sections,
                 offset=offset,
-                extension_name=extension_name
+                extension_name=extension_name,
+                attribute_mask=attribute_mask
             )
         except ValidationError as e:
             return _validation_error_response(e)
@@ -1163,6 +1168,27 @@ async def get_access_rights_handler(request: Request) -> JSONResponse:
     result = await _execute_1c_command("get_access_rights", params_dict, channel)
 
     # Step 7: Return result as JSONResponse
+    return JSONResponse(content=result)
+
+
+async def get_bsl_syntax_help_handler(request: Request) -> JSONResponse:
+    """POST /api/get_bsl_syntax_help"""
+    content_type_error = _check_content_type(request)
+    if content_type_error:
+        return content_type_error
+
+    body, parse_error = await _parse_json_body_with_encoding_detection(request)
+    if parse_error:
+        return parse_error
+
+    try:
+        validated = GetBslSyntaxHelpParams.model_validate(body)
+    except ValidationError as e:
+        return _validation_error_response(e)
+
+    channel = _get_channel(request)
+    result = await _execute_1c_command(
+        "get_bsl_syntax_help", validated.model_dump(), channel)
     return JSONResponse(content=result)
 
 

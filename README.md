@@ -160,6 +160,7 @@ python -m onec_mcp_toolkit_proxy
 | **get_link_of_object** | Генерация навигационной ссылки на объект |
 | **find_references_to_object** | Поиск всех ссылок на объект |
 | **get_access_rights** | Получение прав доступа к объектам метаданных |
+| **get_bsl_syntax_help** | Справочник по встроенному языку BSL: поиск функций, методов, типов и языковых конструкций |
 | **submit_for_deanonymization** | Отправка финального ответа для деанонимизации (только при включённой анонимизации) |
 
 ## 🌐 REST API (альтернатива MCP)
@@ -180,6 +181,7 @@ python -m onec_mcp_toolkit_proxy
 | `/api/get_link_of_object` | POST | Генерация ссылки на объект |
 | `/api/find_references_to_object` | POST | Поиск ссылок на объект |
 | `/api/get_access_rights` | POST | Получение прав доступа |
+| `/api/get_bsl_syntax_help` | POST | Справочник по языку BSL |
 | `/api/submit_for_deanonymization` | POST | Отправить текст для деанонимизации (только при включённой анонимизации) |
 
 ### Формат ответов
