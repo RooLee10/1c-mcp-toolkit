@@ -1493,6 +1493,7 @@ GET_BSL_SYNTAX_HELP_SCHEMA = {
         "Get syntax reference for 1C BSL language.\n"
         "Search by keywords to find built-in functions, methods, types and language constructs.\n"
         "Returns candidates (unique breadcrumb paths) and Markdown content when exactly one breadcrumb matches.\n"
+        "If the single match is a navigation section (no content, has sub-topics), returns its sub-topics as candidates instead.\n"
         "Candidate paths (e.g. \"Массив/Методы/Найти\") and Markdown link targets from content (format: [Title](topic:Path)) can be used as keywords for exact lookup — pass the full string including the topic: prefix as-is.\n"
         "When searching for members of a type, include \"Методы\", \"Свойства\", or \"Конструкторы\" in keywords.\n"
         "Supports pagination: use limit (default 100) and offset (default 0) to page through results.\n"

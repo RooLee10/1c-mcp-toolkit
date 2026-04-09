@@ -67,6 +67,26 @@
 					</Events>
 					<ExtendedTooltip name="ФлагАгрессивнаяАнонимизацияРасширеннаяПодсказка" id="89"/>
 				</CheckBoxField>
+				<CheckBoxField name="ФлагПодтверждениеАнонимизации" id="100">
+					<DataPath>ПодтверждениеАнонимизации</DataPath>
+					<TitleLocation>Right</TitleLocation>
+					<Title>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Подтверждение анонимизации</v8:content>
+						</v8:item>
+					</Title>
+					<ToolTip>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Перед отправкой ответа агенту показывать окно сравнения оригинала и анонимизированных данных</v8:content>
+						</v8:item>
+					</ToolTip>
+					<Events>
+						<Event name="OnChange">ФлагПодтверждениеАнонимизацияПриИзменении</Event>
+					</Events>
+					<ExtendedTooltip name="ФлагПодтверждениеАнонимизацииРасширеннаяПодсказка" id="101"/>
+				</CheckBoxField>
 				<LabelDecoration name="НадписьРазделитель" id="91">
 					<Title>
 						<v8:item>
@@ -793,6 +813,11 @@
 			</Type>
 		</Attribute>
 		<Attribute name="АгрессивнаяАнонимизация" id="90">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ПодтверждениеАнонимизации" id="102">
 			<Type>
 				<v8:Type>xs:boolean</v8:Type>
 			</Type>

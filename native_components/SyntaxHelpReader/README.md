@@ -52,8 +52,13 @@ cp build_x86/Release/SyntaxHelpReader.dll \
 ```bash
 cmake -B build -A x64 -DSYNTAX_HELP_BUILD_TESTS=ON
 cmake --build build --config Release
-./build/Release/test_syntax_help.exe
-# или: ctest --test-dir build -C Release
+./build/Release/test_syntax_help.exe "C:/Program Files/1cv8/<версия>/bin"
+
+# или через ctest (требует -DSYNTAX_HELP_HBK_DIR=... при конфигурировании):
+cmake -B build -A x64 -DSYNTAX_HELP_BUILD_TESTS=ON \
+      -DSYNTAX_HELP_HBK_DIR="C:/Program Files/1cv8/<версия>/bin"
+cmake --build build --config Release
+ctest --test-dir build -C Release
 ```
 
 Тесты проверяют загрузку `.hbk` из `C:/Program Files/1cv8/<версия>/bin`, поиск по ключевым словам, разрешение ссылок и протокол `topic:`.
@@ -103,7 +108,8 @@ cmake --build build --config Release
 ```
 
 - `candidates` — уникальные breadcrumb-пути совпавших тем
-- `content` — Markdown-содержимое, если совпал ровно один уникальный breadcrumb; иначе `null`
+- `content` — Markdown-содержимое, если совпал ровно один уникальный breadcrumb с содержимым; иначе `null`
+- если совпавший breadcrumb является навигационным разделом (нет содержимого, есть подтемы), `candidates` содержит его прямые подтемы
 - Ссылки в Markdown резолвятся в breadcrumb-пути с префиксом `topic:`, например `[Добавить](topic:Массив/Методы/Добавить)`
 
 ### GetTopic / ПолучитьТему

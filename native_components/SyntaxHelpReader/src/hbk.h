@@ -21,6 +21,11 @@ struct IndexedTopic {
     std::string source_path;  // path to .hbk file (for relative link resolution)
     std::shared_ptr<const std::vector<uint8_t>> file_storage; // shared across all topics from same file
     std::vector<std::string> search_terms; // normalized search terms (breadcrumb parts, title, IndexPackBlock terms)
+    // Container expansion: populated at load time from TocNode.child_ids.
+    // is_container is true IFF this node had at least one child_id in the TOC.
+    // Kept separate from content because content.empty() also fires for broken leaves.
+    bool is_container = false;
+    std::vector<std::string> direct_children_bc; // original breadcrumbs of direct children
 };
 
 // ---------------------------------------------------------------------------
@@ -81,6 +86,11 @@ private:
 
     // --- content merging ---
     std::string MergeTopicGroupContent(const std::vector<size_t>& indices);
+
+    // --- container expansion ---
+    // Returns union of direct_children_bc from all container topics in indices.
+    // Deduplicates by original string. Returns empty vector if no containers found.
+    std::vector<std::string> CollectChildren(const std::vector<size_t>& indices);
 
     // --- normalization ---
     static std::string Normalize(const std::string& utf8);

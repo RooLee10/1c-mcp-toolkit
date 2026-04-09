@@ -740,7 +740,7 @@
 							<Title>
 								<v8:item>
 									<v8:lang>ru</v8:lang>
-									<v8:content>Деанонимизация текста</v8:content>
+									<v8:content>Анонимизация / Деанонимизация текста</v8:content>
 								</v8:item>
 							</Title>
 							<Group>Vertical</Group>
@@ -760,10 +760,22 @@
 									<ContextMenu name="НадписьДеАнонимизацияОтступКонтекстноеМеню" id="114"/>
 									<ExtendedTooltip name="НадписьДеАнонимизацияОтступРасширеннаяПодсказка" id="115"/>
 								</LabelDecoration>
-								<Button name="КнопкаДеАнонимизировать" id="110">
-									<Type>UsualButton</Type>
-									<CommandName>Form.Command.ДеАнонимизироватьТекст</CommandName>
-								</Button>
+								<UsualGroup name="ГруппаКнопокАнонимизации" id="156">
+									<Group>AlwaysHorizontal</Group>
+									<Representation>None</Representation>
+									<ShowTitle>false</ShowTitle>
+									<ExtendedTooltip name="ГруппаКнопокАнонимизацииРасширеннаяПодсказка" id="157"/>
+									<ChildItems>
+										<Button name="КнопкаДеАнонимизировать" id="110">
+											<Type>UsualButton</Type>
+											<CommandName>Form.Command.ДеАнонимизироватьТекст</CommandName>
+										</Button>
+										<Button name="КнопкаАнонимизировать" id="155">
+											<Type>UsualButton</Type>
+											<CommandName>Form.Command.АнонимизироватьТекст</CommandName>
+										</Button>
+									</ChildItems>
+								</UsualGroup>
 								<Pages name="СтраницыПросмотраТекста" id="116">
 									<PagesRepresentation>TabsOnTop</PagesRepresentation>
 									<Height>9</Height>
@@ -975,6 +987,11 @@
 				<v8:Type>xs:boolean</v8:Type>
 			</Type>
 		</Attribute>
+		<Attribute name="ПодтверждениеАнонимизации" id="154">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
 		<Attribute name="ТекстДляДеАнонимизации" id="18">
 			<Type>
 				<v8:Type>xs:string</v8:Type>
@@ -1098,6 +1115,15 @@
 				</v8:item>
 			</Title>
 			<Action>ДеАнонимизироватьТекст</Action>
+		</Command>
+		<Command name="АнонимизироватьТекст" id="8">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Анонимизировать</v8:content>
+				</v8:item>
+			</Title>
+			<Action>АнонимизироватьТекст</Action>
 		</Command>
 	</Commands>
 	<Events>

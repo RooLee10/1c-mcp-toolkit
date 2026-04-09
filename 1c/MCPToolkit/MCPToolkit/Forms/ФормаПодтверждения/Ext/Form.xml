@@ -86,11 +86,13 @@
 				<Button name="КнопкаРазрешить" id="25">
 					<Type>UsualButton</Type>
 					<CommandName>Form.Command.Разрешить</CommandName>
+					<TextColor>web:Green</TextColor>
 					<ExtendedTooltip name="КнопкаРазрешитьРасширеннаяПодсказка" id="26"/>
 				</Button>
 				<Button name="КнопкаОтклонить" id="27">
 					<Type>UsualButton</Type>
 					<CommandName>Form.Command.Отклонить</CommandName>
+					<TextColor>web:Red</TextColor>
 					<ExtendedTooltip name="КнопкаОтклонитьРасширеннаяПодсказка" id="28"/>
 				</Button>
 			</ChildItems>

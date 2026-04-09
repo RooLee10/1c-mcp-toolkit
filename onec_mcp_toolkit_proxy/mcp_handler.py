@@ -1326,6 +1326,7 @@ async def get_bsl_syntax_help(
 
     Search by keywords to find built-in functions, methods, types and language constructs.
     Returns candidates (unique breadcrumb paths) and Markdown content when exactly one breadcrumb matches.
+    If the single match is a navigation section (no content, has sub-topics), returns its sub-topics as candidates instead.
     Candidate paths (e.g. "Массив/Методы/Найти") and Markdown link targets from content (format: [Title](topic:Path)) can be used as keywords for exact lookup — pass the full string including the topic: prefix as-is.
     When searching for members of a type, include "Методы", "Свойства", or "Конструкторы" in keywords.
     Supports pagination via limit/offset. If has_more is true, call again with offset += limit.

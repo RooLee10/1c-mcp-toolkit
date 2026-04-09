@@ -27,6 +27,7 @@
 			<Form>Форма</Form>
 			<Form>ФормаНастройкиТочнойАнонимизации</Form>
 			<Form>ФормаПодтверждения</Form>
+			<Form>ФормаПодтверждениеАнонимизации</Form>
 			<Template>MCPHttpTransport</Template>
 			<Template>НастройкиТочнойАнонимизацииПоУмолчанию</Template>
 			<Template>ToonConverter</Template>

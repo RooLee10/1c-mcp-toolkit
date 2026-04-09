@@ -829,6 +829,28 @@ int HbkIndex::LoadOneFile(const std::string& path) {
         t.source_path  = path;
         t.file_storage = file_storage_shared;
         t.search_terms = BuildSearchTerms(breadcrumb, title, node.html_path, index_term_map);
+
+        // Populate container fields from TOC child_ids before the move.
+        // is_container is set from the TOC hierarchy, not inferred from content,
+        // because content.empty() also fires for broken/unreadable leaf topics.
+        if (!node.child_ids.empty()) {
+            t.is_container = true;
+            for (int child_id : node.child_ids) {
+                auto cit = by_id.find(child_id);
+                if (cit == by_id.end()) continue;
+                const TocNode* child_node = cit->second;
+                if (DisplayTitle(*child_node).empty()) continue;
+                std::string child_bc = BuildBreadcrumb(*child_node, by_id);
+                if (child_bc.empty()) continue;
+                // Deduplicate by original string (NOT normalized), matching
+                // the same candidate identity semantics used in Search/GetTopic.
+                bool dup = false;
+                for (const auto& ex : t.direct_children_bc)
+                    if (ex == child_bc) { dup = true; break; }
+                if (!dup) t.direct_children_bc.push_back(child_bc);
+            }
+        }
+
         all_topics_.push_back(std::move(t));
         ++added;
     }
@@ -1075,6 +1097,25 @@ std::string HbkIndex::MergeTopicGroupContent(const std::vector<size_t>& indices)
 }
 
 // ============================================================================
+//  CollectChildren
+// ============================================================================
+
+std::vector<std::string> HbkIndex::CollectChildren(const std::vector<size_t>& indices) {
+    std::vector<std::string> result;
+    for (size_t idx : indices) {
+        const IndexedTopic& t = all_topics_[idx];
+        if (!t.is_container) continue;
+        for (const std::string& child_bc : t.direct_children_bc) {
+            bool dup = false;
+            for (const auto& ex : result)
+                if (ex == child_bc) { dup = true; break; }
+            if (!dup) result.push_back(child_bc);
+        }
+    }
+    return result;
+}
+
+// ============================================================================
 //  Search
 // ============================================================================
 
@@ -1099,7 +1140,10 @@ std::string HbkIndex::Search(const std::vector<std::string>& keywords, bool matc
         if (exact_grouped.size() == 1) {
             const auto& [bc, indices] = *exact_grouped.begin();
             std::string content = MergeTopicGroupContent(indices);
-            return MakeResultJson({bc}, content.empty() ? nullptr : &content);
+            if (!content.empty()) return MakeResultJson({bc}, &content);
+            std::vector<std::string> children = CollectChildren(indices);
+            if (!children.empty()) return MakeResultJson(children, nullptr);
+            return MakeResultJson({bc}, nullptr);
         }
         // 0 or >1 matches → fall through to scoring search
     }
@@ -1141,8 +1185,12 @@ std::string HbkIndex::Search(const std::vector<std::string>& keywords, bool matc
     std::vector<std::string> candidates(order.begin(), order.end());
 
     if (candidates.size() == 1) {
-        std::string content = MergeTopicGroupContent(grouped[candidates[0]]);
-        return MakeResultJson(candidates, content.empty() ? nullptr : &content);
+        const std::vector<size_t>& indices = grouped[candidates[0]];
+        std::string content = MergeTopicGroupContent(indices);
+        if (!content.empty()) return MakeResultJson(candidates, &content);
+        std::vector<std::string> children = CollectChildren(indices);
+        if (!children.empty()) return MakeResultJson(children, nullptr);
+        return MakeResultJson(candidates, nullptr);
     }
     return MakeResultJson(candidates, nullptr);
 }
@@ -1168,8 +1216,10 @@ std::string HbkIndex::GetTopic(const std::string& exact_breadcrumb) {
     if (grouped.size() == 1) {
         const auto& [bc, indices] = *grouped.begin();
         std::string content = MergeTopicGroupContent(indices);
-        std::vector<std::string> cands = { bc };
-        return MakeResultJson(cands, content.empty() ? nullptr : &content);
+        if (!content.empty()) return MakeResultJson({bc}, &content);
+        std::vector<std::string> children = CollectChildren(indices);
+        if (!children.empty()) return MakeResultJson(children, nullptr);
+        return MakeResultJson({bc}, nullptr);
     }
 
     // Multiple unique breadcrumbs (shouldn't happen normally)
