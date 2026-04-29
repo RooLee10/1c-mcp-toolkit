@@ -1,6 +1,8 @@
 #include "component.h"
+#include "utf_utils.h"
 
 #include <cstring>
+#include <cwctype>
 #include <algorithm>
 #include <mutex>
 
@@ -423,26 +425,7 @@ std::string MCPHttpTransportComponent::WStringToUTF8(const std::wstring& wstr) {
                          result.data(), size, nullptr, nullptr);
     return result;
 #else
-    // Simple conversion for non-Windows (wchar_t is 32-bit)
-    std::string result;
-    for (wchar_t ch : wstr) {
-        if (ch < 0x80) {
-            result += static_cast<char>(ch);
-        } else if (ch < 0x800) {
-            result += static_cast<char>(0xC0 | (ch >> 6));
-            result += static_cast<char>(0x80 | (ch & 0x3F));
-        } else if (ch < 0x10000) {
-            result += static_cast<char>(0xE0 | (ch >> 12));
-            result += static_cast<char>(0x80 | ((ch >> 6) & 0x3F));
-            result += static_cast<char>(0x80 | (ch & 0x3F));
-        } else {
-            result += static_cast<char>(0xF0 | (ch >> 18));
-            result += static_cast<char>(0x80 | ((ch >> 12) & 0x3F));
-            result += static_cast<char>(0x80 | ((ch >> 6) & 0x3F));
-            result += static_cast<char>(0x80 | (ch & 0x3F));
-        }
-    }
-    return result;
+    return mcp::WstrToUtf8(wstr);
 #endif
 }
 
@@ -458,32 +441,7 @@ std::wstring MCPHttpTransportComponent::UTF8ToWString(const std::string& str) {
                          result.data(), size);
     return result;
 #else
-    std::wstring result;
-    size_t i = 0;
-    while (i < str.size()) {
-        uint32_t ch = 0;
-        unsigned char c = str[i];
-        if (c < 0x80) {
-            ch = c; ++i;
-        } else if (c < 0xE0) {
-            ch = (c & 0x1F) << 6;
-            if (i + 1 < str.size()) ch |= (str[i + 1] & 0x3F);
-            i += 2;
-        } else if (c < 0xF0) {
-            ch = (c & 0x0F) << 12;
-            if (i + 1 < str.size()) ch |= (str[i + 1] & 0x3F) << 6;
-            if (i + 2 < str.size()) ch |= (str[i + 2] & 0x3F);
-            i += 3;
-        } else {
-            ch = (c & 0x07) << 18;
-            if (i + 1 < str.size()) ch |= (str[i + 1] & 0x3F) << 12;
-            if (i + 2 < str.size()) ch |= (str[i + 2] & 0x3F) << 6;
-            if (i + 3 < str.size()) ch |= (str[i + 3] & 0x3F);
-            i += 4;
-        }
-        result += static_cast<wchar_t>(ch);
-    }
-    return result;
+    return mcp::Utf8ToWstr(str);
 #endif
 }
 

@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "utf_utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -24,10 +25,7 @@ std::wstring Utf8ToWide(const std::string& input) {
     MultiByteToWideChar(CP_UTF8, 0, input.data(), static_cast<int>(input.size()), result.data(), size);
     return result;
 #else
-    std::wstring result;
-    result.reserve(input.size());
-    for (unsigned char ch : input) result.push_back(static_cast<wchar_t>(ch));
-    return result;
+    return Utf8ToUtf16Units(input);
 #endif
 }
 
@@ -40,15 +38,13 @@ std::string WideToUtf8(const std::wstring& input) {
     WideCharToMultiByte(CP_UTF8, 0, input.data(), static_cast<int>(input.size()), result.data(), size, nullptr, nullptr);
     return result;
 #else
-    std::string result;
-    for (wchar_t ch : input) result.push_back(static_cast<char>(ch));
-    return result;
+    return Utf16UnitsToUtf8(input);
 #endif
 }
 
 std::string ToUpperUtf8(const std::string& input) {
     std::wstring wide = Utf8ToWide(input);
-    std::transform(wide.begin(), wide.end(), wide.begin(), [](wchar_t ch) { return std::towupper(ch); });
+    for (auto& ch : wide) ch = static_cast<wchar_t>(UppercaseU16(static_cast<uint32_t>(ch)));
     return WideToUtf8(wide);
 }
 

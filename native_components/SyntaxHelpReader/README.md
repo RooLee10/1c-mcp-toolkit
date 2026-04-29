@@ -31,6 +31,27 @@ cmake --build build_x86 --config Release
 
 miniz скачивается автоматически через CMake FetchContent при первой сборке.
 
+## Сборка под Linux (через Docker)
+
+Требования: [Docker Desktop](https://www.docker.com/products/docker-desktop/) на Windows.
+
+```
+native_components\SyntaxHelpReader\build_linux.bat
+```
+
+Результат: `build_linux/SyntaxHelpReader.so`
+
+База образа — Ubuntu 20.04 (glibc 2.31). Подходит для RedOS 8.x и большинства Linux-серверов 1С. Для RedOS 7.x замените базу в `Dockerfile.linux` на `debian:buster`.
+
+### Установка на Linux-сервер 1С
+
+```bash
+cp build_linux/SyntaxHelpReader.so \
+   ../../1c/MCPToolkit/MCPToolkit/Templates/SyntaxHelpReader/Ext/Template.bin
+```
+
+---
+
 ## Установка в обработку
 
 Скопируйте DLL нужной разрядности в макет обработки под именем `Template.bin`:

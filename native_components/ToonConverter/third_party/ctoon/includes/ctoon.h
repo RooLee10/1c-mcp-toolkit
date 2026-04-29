@@ -141,3 +141,19 @@ Value loads(const std::string& content, Type format);
 std::string dumps(const Value& value, Type format, int indent = 2);
 
 } // namespace ctoon
+
+// std::variant_size / variant_alternative are not automatically inherited
+// for types derived from std::variant (e.g. ctoon::Primitive).
+// MSVC works via /Zc:twoPhase-; GCC/Clang require explicit specializations.
+#if !defined(_MSC_VER)
+namespace std {
+    template<> struct variant_size<::ctoon::Primitive>
+        : variant_size<::ctoon::Primitive::Base> {};
+    template<> struct variant_size<const ::ctoon::Primitive>
+        : variant_size<::ctoon::Primitive::Base> {};
+    template<size_t I> struct variant_alternative<I, ::ctoon::Primitive>
+        : variant_alternative<I, ::ctoon::Primitive::Base> {};
+    template<size_t I> struct variant_alternative<I, const ::ctoon::Primitive>
+        : variant_alternative<I, const ::ctoon::Primitive::Base> {};
+}
+#endif

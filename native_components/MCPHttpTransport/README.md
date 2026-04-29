@@ -4,9 +4,10 @@ C++ HTTP-сервер для загрузки внутрь процесса 1С:
 
 ## Требования
 
-- Windows (x86 или x64)
+- Windows (x86 или x64), либо Linux (x86_64)
 - CMake 3.16+
-- Visual Studio 2022 (MSVC)
+- Visual Studio 2022 (MSVC) — для Windows
+- Docker Desktop — для Linux-сборки
 
 ## Сборка
 
@@ -26,6 +27,16 @@ cmake --build build_x86 --config Release
 # Результат: build_x86/Release/MCPHttpTransport.dll
 ```
 
+## Сборка под Linux
+
+Требуется Docker Desktop. Запустите из корня репозитория:
+
+```bat
+native_components\MCPHttpTransport\build_linux.bat
+```
+
+Результат: `build_linux/MCPHttpTransport.so`
+
 ## Установка в обработку
 
 Скопируйте DLL нужной разрядности в макет обработки под именем `Template.bin`:
@@ -37,6 +48,12 @@ cp build/Release/MCPHttpTransport.dll \
 
 # x86
 cp build_x86/Release/MCPHttpTransport.dll \
+   ../../1c/MCPToolkit/MCPToolkit/Templates/MCPHttpTransport/Ext/Template.bin
+```
+
+```bash
+# Linux
+cp build_linux/MCPHttpTransport.so \
    ../../1c/MCPToolkit/MCPToolkit/Templates/MCPHttpTransport/Ext/Template.bin
 ```
 

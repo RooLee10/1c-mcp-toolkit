@@ -63,6 +63,8 @@ private:
     // UTF-8 ↔ wstring helpers (Windows: wchar_t = UTF-16)
     static std::string WstrToUtf8(const std::wstring& ws);
     static std::wstring Utf8ToWstr(const std::string& s);
+    // WCHAR_T* (uint16_t* on Linux) → wstring
+    static std::wstring WcharTToWstr(const WCHAR_T* s);
 
     // JSON array of strings → vector<string>
     static std::vector<std::string> ParseJsonStringArray(const std::string& json);

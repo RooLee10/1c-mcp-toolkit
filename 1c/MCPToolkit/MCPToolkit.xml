@@ -36,6 +36,7 @@
 			<Template>НастройкиRegexПоУмолчанию</Template>
 			<Template>MarkdownViewer</Template>
 			<Template>SyntaxHelpReader</Template>
+			<Template>ScreenCapture</Template>
 		</ChildObjects>
 	</ExternalDataProcessor>
 </MetaDataObject>

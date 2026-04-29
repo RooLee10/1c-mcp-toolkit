@@ -12,46 +12,46 @@
 namespace ctoon {
 
 // Primitive type checking methods
-bool Primitive::isString() const { return std::holds_alternative<std::string>(*this); }
-bool Primitive::isDouble() const { return std::holds_alternative<double>(*this); }
-bool Primitive::isInt() const { return std::holds_alternative<int64_t>(*this); }
-bool Primitive::isBool() const { return std::holds_alternative<bool>(*this); }
-bool Primitive::isNull() const { return std::holds_alternative<std::nullptr_t>(*this); }
+bool Primitive::isString() const { return std::holds_alternative<std::string>(static_cast<const Base&>(*this)); }
+bool Primitive::isDouble() const { return std::holds_alternative<double>(static_cast<const Base&>(*this)); }
+bool Primitive::isInt() const { return std::holds_alternative<int64_t>(static_cast<const Base&>(*this)); }
+bool Primitive::isBool() const { return std::holds_alternative<bool>(static_cast<const Base&>(*this)); }
+bool Primitive::isNull() const { return std::holds_alternative<std::nullptr_t>(static_cast<const Base&>(*this)); }
 
 // Primitive getter methods with error checking
 const std::string& Primitive::getString() const { 
     if (!isString()) {
         throw std::runtime_error("Primitive is not a string");
     }
-    return std::get<std::string>(*this);
+    return std::get<std::string>(static_cast<const Base&>(*this));
 }
 
 double Primitive::getDouble() const { 
     if (!isDouble()) {
         throw std::runtime_error("Primitive is not a double");
     }
-    return std::get<double>(*this);
+    return std::get<double>(static_cast<const Base&>(*this));
 }
 
 int64_t Primitive::getInt() const { 
     if (!isInt()) {
         throw std::runtime_error("Primitive is not an int");
     }
-    return std::get<int64_t>(*this);
+    return std::get<int64_t>(static_cast<const Base&>(*this));
 }
 
 bool Primitive::getBool() const { 
     if (!isBool()) {
         throw std::runtime_error("Primitive is not a bool");
     }
-    return std::get<bool>(*this);
+    return std::get<bool>(static_cast<const Base&>(*this));
 }
 
 std::nullptr_t Primitive::getNull() const { 
     if (!isNull()) {
         throw std::runtime_error("Primitive is not null");
     }
-    return std::get<std::nullptr_t>(*this);
+    return std::get<std::nullptr_t>(static_cast<const Base&>(*this));
 }
 
 // Number methods
@@ -106,7 +106,7 @@ std::string Primitive::asString() const {
         } else { // std::string
             return value;
         }
-    }, *this);
+    }, static_cast<const Base&>(*this));
 }
 
 bool isPrimitive(const Value& value) { return value.isPrimitive(); }

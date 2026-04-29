@@ -4,12 +4,13 @@ C++ компонента для загрузки внутрь процесса 1
 
 ## Требования
 
-- Windows (x86 или x64)
-- CMake 3.16+
-- Visual Studio 2022 (MSVC)
+- Windows (x86 или x64): CMake 3.16+, Visual Studio 2022 (MSVC)
+- Linux: Docker Desktop (сборка через контейнер)
 - Доступ в интернет на этапе `cmake`, если `include/nlohmann/json.hpp` ещё не закеширован локально
 
 ## Сборка
+
+### Windows
 
 ```bash
 cd native_components/QueryLineageAnalyzer
@@ -28,17 +29,31 @@ cmake --build build_tests --config Release
 ctest --test-dir build_tests -C Release
 ```
 
+### Linux (через Docker)
+
+```bat
+native_components\QueryLineageAnalyzer\build_linux.bat
+```
+
+Результат: `native_components/QueryLineageAnalyzer/build_linux/QueryLineageAnalyzer.so`
+
+Скрипт собирает образ на базе Ubuntu 20.04 (glibc 2.31) — подходит для RedOS 8.x и совместимых дистрибутивов. Для RedOS 7.x замените базовый образ в `Dockerfile.linux` на `debian:buster`.
+
 ## Установка в обработку
 
-Скопировать DLL нужной разрядности в макет обработки под именем `Template.bin`:
+Скопировать DLL/SO нужной платформы в макет обработки под именем `Template.bin`:
 
 ```bash
-# x64
+# Windows x64
 cp build/Release/QueryLineageAnalyzer.dll \
   ../../1c/MCPToolkit/MCPToolkit/Templates/QueryLineageAnalyzer/Ext/Template.bin
 
-# x86
+# Windows x86
 cp build_x86/Release/QueryLineageAnalyzer.dll \
+  ../../1c/MCPToolkit/MCPToolkit/Templates/QueryLineageAnalyzer/Ext/Template.bin
+
+# Linux
+cp build_linux/QueryLineageAnalyzer.so \
   ../../1c/MCPToolkit/MCPToolkit/Templates/QueryLineageAnalyzer/Ext/Template.bin
 ```
 

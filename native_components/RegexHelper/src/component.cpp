@@ -9,6 +9,20 @@
 #include <windows.h>
 #endif
 
+#ifndef _WINDOWS
+// Invariant: all std::wstring values inside this component contain UTF-16 code units
+// (0x0000-0xFFFF) stored in Linux's 32-bit wchar_t. This helper converts to
+// uint16_t array that PCRE2-16 expects. Truncation to 16 bits is intentional.
+static std::vector<uint16_t> ToU16(const std::wstring& s) {
+    std::vector<uint16_t> v;
+    v.reserve(s.size() + 1);
+    for (wchar_t c : s)
+        v.push_back(static_cast<uint16_t>(c));
+    v.push_back(0); // null terminator
+    return v;
+}
+#endif
+
 namespace regex_helper {
 
 // ============================================================================
@@ -158,8 +172,14 @@ bool RegexHelperComponent::CallAsFunc(const long lMethodNum,
 
             int error_code = 0;
             PCRE2_SIZE error_offset = 0;
+#ifdef _WINDOWS
+            auto* vp_pat_ptr = reinterpret_cast<PCRE2_SPTR16>(pattern.c_str());
+#else
+            auto vp_u16_pat = ToU16(pattern);
+            auto* vp_pat_ptr = reinterpret_cast<PCRE2_SPTR16>(vp_u16_pat.data());
+#endif
             pcre2_code_16* re = pcre2_compile_16(
-                reinterpret_cast<PCRE2_SPTR16>(pattern.c_str()),
+                vp_pat_ptr,
                 PCRE2_ZERO_TERMINATED,
                 PCRE2_UTF | PCRE2_UCP,
                 &error_code,
@@ -173,7 +193,13 @@ bool RegexHelperComponent::CallAsFunc(const long lMethodNum,
                 PCRE2_UCHAR16 buffer[256];
                 pcre2_get_error_message_16(error_code,
                     reinterpret_cast<PCRE2_UCHAR16*>(buffer), sizeof(buffer) / sizeof(buffer[0]));
+#ifdef _WINDOWS
                 std::wstring err_msg(reinterpret_cast<const wchar_t*>(buffer));
+#else
+                std::wstring err_msg;
+                for (size_t i = 0; i < sizeof(buffer)/sizeof(buffer[0]) && buffer[i]; ++i)
+                    err_msg += static_cast<wchar_t>(buffer[i]);
+#endif
                 err_msg += L" (at offset " + std::to_wstring(static_cast<int>(error_offset)) + L")";
                 return SetWStringToVariant(pvarRetValue, err_msg);
             }
@@ -200,8 +226,14 @@ pcre2_code_16* RegexHelperComponent::GetOrCompile(const std::wstring& pattern) {
 
     int error_code = 0;
     PCRE2_SIZE error_offset = 0;
+#ifdef _WINDOWS
+    auto* gc_pat_ptr = reinterpret_cast<PCRE2_SPTR16>(pattern.c_str());
+#else
+    auto gc_u16_pat = ToU16(pattern);
+    auto* gc_pat_ptr = reinterpret_cast<PCRE2_SPTR16>(gc_u16_pat.data());
+#endif
     pcre2_code_16* re = pcre2_compile_16(
-        reinterpret_cast<PCRE2_SPTR16>(pattern.c_str()),
+        gc_pat_ptr,
         PCRE2_ZERO_TERMINATED,
         PCRE2_UTF | PCRE2_UCP,
         &error_code,
@@ -218,6 +250,13 @@ std::vector<RegexHelperComponent::Match> RegexHelperComponent::ProcessText(
     // protected_ranges: list of [start, end) — initially scan for existing tokens
     std::vector<std::pair<int,int>> protected_ranges;
 
+#ifdef _WINDOWS
+    auto* text_ptr = reinterpret_cast<PCRE2_SPTR16>(text.c_str());
+#else
+    auto text_u16 = ToU16(text);
+    auto* text_ptr = reinterpret_cast<PCRE2_SPTR16>(text_u16.data());
+#endif
+
     // Find existing tokens matching \[[A-Z]+-\d+\] using pcre2
     {
         static const wchar_t* kTokenPattern = L"\\[[A-Z]+-\\d+\\]";
@@ -229,7 +268,7 @@ std::vector<RegexHelperComponent::Match> RegexHelperComponent::ProcessText(
                 size_t text_len = text.size();
                 while (offset <= text_len) {
                     int rc = pcre2_match_16(token_re,
-                        reinterpret_cast<PCRE2_SPTR16>(text.c_str()),
+                        text_ptr,
                         text_len, offset, 0, md, nullptr);
                     if (rc < 0) break;
                     PCRE2_SIZE* ov = pcre2_get_ovector_pointer_16(md);
@@ -263,7 +302,7 @@ std::vector<RegexHelperComponent::Match> RegexHelperComponent::ProcessText(
 
         while (offset <= text_len) {
             int rc = pcre2_match_16(re,
-                reinterpret_cast<PCRE2_SPTR16>(text.c_str()),
+                text_ptr,
                 text_len, offset, 0, md, nullptr);
 
             if (rc < 0) break;

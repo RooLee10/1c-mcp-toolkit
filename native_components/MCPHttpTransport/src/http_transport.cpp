@@ -1,4 +1,5 @@
 #include "http_transport.h"
+#include "encoding_utils.h"
 
 // Define before including httplib
 #define CPPHTTPLIB_NO_EXCEPTIONS
@@ -729,7 +730,7 @@ std::string HttpTransport::WStringToUTF8(const std::wstring& s) {
                          &result[0], size, nullptr, nullptr);
     return result;
 #else
-    return "";
+    return mcp::WstrToUtf8(s);
 #endif
 }
 
@@ -740,7 +741,7 @@ bool HttpTransport::IsValidUTF8(const std::string& s) {
                                  s.c_str(), (int)s.size(), nullptr, 0);
     return r > 0;
 #else
-    return true;
+    return mcp::IsValidUtf8(s);
 #endif
 }
 
@@ -766,7 +767,7 @@ std::wstring HttpTransport::DecodeWithCodePage(const std::string& s, unsigned in
     MultiByteToWideChar((UINT)codepage, 0, s.c_str(), (int)s.size(), &result[0], size);
     return result;
 #else
-    return L"";
+    return mcp::DecodeCP1x(s, (int)codepage);
 #endif
 }
 
@@ -818,7 +819,7 @@ std::string HttpTransport::QueryToJsonDecoded(const httplib::Request& req) {
 
     std::map<std::string, std::vector<std::string>> grouped;
     for (auto& [key, value] : req.params) {
-        grouped[key].push_back(AutoDecodeToUTF8(value, ""));  // no Content-Type
+        grouped[AutoDecodeToUTF8(key, "")].push_back(AutoDecodeToUTF8(value, ""));
     }
 
     std::ostringstream ss;

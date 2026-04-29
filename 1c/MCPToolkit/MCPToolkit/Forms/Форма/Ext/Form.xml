@@ -314,6 +314,21 @@
 												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
 											</Events>
 										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментGetScreenshot" id="158">
+											<DataPath>ИнструментВключен_GetScreenshot</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>get_screenshot</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментGetScreenshotРасширеннаяПодсказка" id="159"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
 									</ChildItems>
 								</UsualGroup>
 								<UsualGroup name="ГруппаИнструменты2" id="134">
@@ -363,6 +378,21 @@
 											<ToolTipRepresentation>Button</ToolTipRepresentation>
 											<CheckBoxType>Switcher</CheckBoxType>
 											<ExtendedTooltip name="ПолеИнструментGetAccessRightsРасширеннаяПодсказка" id="147"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментRestart1cSession" id="170">
+											<DataPath>ИнструментВключен_Restart1cSession</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>restart_1c_session</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментRestart1cSessionРасширеннаяПодсказка" id="171"/>
 											<Events>
 												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
 											</Events>
@@ -420,8 +450,152 @@
 												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
 											</Events>
 										</CheckBoxField>
+										<CheckBoxField name="ПолеИнструментClose1cSession" id="172">
+											<DataPath>ИнструментВключен_Close1cSession</DataPath>
+											<Title>
+												<v8:item>
+													<v8:lang>ru</v8:lang>
+													<v8:content>close_1c_session</v8:content>
+												</v8:item>
+											</Title>
+											<ToolTipRepresentation>Button</ToolTipRepresentation>
+											<CheckBoxType>Switcher</CheckBoxType>
+											<ExtendedTooltip name="ПолеИнструментClose1cSessionРасширеннаяПодсказка" id="173"/>
+											<Events>
+												<Event name="ПриИзменении">ИнструментПриИзменении</Event>
+											</Events>
+										</CheckBoxField>
 									</ChildItems>
 								</UsualGroup>
+							</ChildItems>
+						</UsualGroup>
+					</ChildItems>
+				</UsualGroup>
+				<UsualGroup name="ГруппаНастройкиПерезапуска" id="163">
+					<Title>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Параметры перезапуска сессии</v8:content>
+						</v8:item>
+					</Title>
+					<Group>Vertical</Group>
+					<Representation>None</Representation>
+					<ExtendedTooltip name="ГруппаНастройкиПерезапускаРасширеннаяПодсказка" id="164"/>
+					<ChildItems>
+						<UsualGroup name="ГруппаАутентификацииПерезапуска" id="176">
+							<ShowTitle>false</ShowTitle>
+							<Group>AlwaysHorizontal</Group>
+							<Representation>None</Representation>
+							<ExtendedTooltip name="ГруппаАутентификацииПерезапускаРасширеннаяПодсказка" id="177"/>
+							<ChildItems>
+								<RadioButtonField name="РежимАутентификацииПерезапуска" id="165">
+									<DataPath>РежимАутентификацииПерезапуска</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Аутентификация при перезапуске</v8:content>
+										</v8:item>
+									</Title>
+									<RadioButtonType>RadioButtons</RadioButtonType>
+									<ChoiceList>
+										<xr:Item>
+											<xr:Presentation/>
+											<xr:CheckState>0</xr:CheckState>
+											<xr:Value xsi:type="FormChoiceListDesTimeValue">
+												<Presentation>
+													<v8:item>
+														<v8:lang>ru</v8:lang>
+														<v8:content>Windows</v8:content>
+													</v8:item>
+												</Presentation>
+												<Value xsi:type="xs:decimal">0</Value>
+											</xr:Value>
+										</xr:Item>
+										<xr:Item>
+											<xr:Presentation/>
+											<xr:CheckState>0</xr:CheckState>
+											<xr:Value xsi:type="FormChoiceListDesTimeValue">
+												<Presentation>
+													<v8:item>
+														<v8:lang>ru</v8:lang>
+														<v8:content>Пароль</v8:content>
+													</v8:item>
+												</Presentation>
+												<Value xsi:type="xs:decimal">1</Value>
+											</xr:Value>
+										</xr:Item>
+									</ChoiceList>
+									<ContextMenu name="РежимАутентификацииПерезапускаКонтекстноеМеню" id="166"/>
+									<ExtendedTooltip name="РежимАутентификацииПерезапускаРасширеннаяПодсказка" id="167"/>
+									<Events>
+										<Event name="ПриИзменении">РежимАутентификацииПерезапускаПриИзменении</Event>
+									</Events>
+								</RadioButtonField>
+								<InputField name="ПарольПерезапуска" id="168">
+									<DataPath>ПарольПерезапуска</DataPath>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Пароль</v8:content>
+										</v8:item>
+									</Title>
+									<TitleLocation>None</TitleLocation>
+									<HorizontalStretch>false</HorizontalStretch>
+									<OpenButton>true</OpenButton>
+									<PasswordMode>true</PasswordMode>
+									<ExtendedTooltip name="ПарольПерезапускаРасширеннаяПодсказка" id="169">
+										<Title>
+											<v8:item>
+												<v8:lang>ru</v8:lang>
+												<v8:content>Пароль текущего пользователя</v8:content>
+											</v8:item>
+										</Title>
+									</ExtendedTooltip>
+									<Events>
+										<Event name="Opening">ПарольПерезапускаОткрытиеЗначения</Event>
+									</Events>
+								</InputField>
+							</ChildItems>
+						</UsualGroup>
+						<UsualGroup name="ГруппаДопКлючаПерезапуска" id="178">
+							<ShowTitle>false</ShowTitle>
+							<Group>AlwaysHorizontal</Group>
+							<Representation>None</Representation>
+							<ExtendedTooltip name="ГруппаДопКлючаПерезапускаРасширеннаяПодсказка" id="179"/>
+							<ChildItems>
+								<InputField name="ПользовательскийКлючШифрования" id="180">
+									<DataPath>ПользовательскийКлючШифрования</DataPath>
+									<Width>21</Width>
+									<HorizontalStretch>false</HorizontalStretch>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Доп. ключ шифрования</v8:content>
+										</v8:item>
+									</Title>
+									<ExtendedTooltip name="ПользовательскийКлючШифрованияРасширеннаяПодсказка" id="181">
+										<Title>
+											<v8:item>
+												<v8:lang>ru</v8:lang>
+												<v8:content>Дополнительный ключ шифрования пароля, передаваемого между старой и новой сессией при перезапуске. Добавляется к базовому ключу — чем сложнее ключ, тем надёжнее защита пароля в файле параметров запуска.</v8:content>
+											</v8:item>
+										</Title>
+									</ExtendedTooltip>
+									<Events>
+										<Event name="ПриИзменении">ПользовательскийКлючШифрованияПриИзменении</Event>
+									</Events>
+								</InputField>
+								<Button name="КнопкаСгенерироватьКлюч" id="183">
+									<Type>UsualButton</Type>
+									<Title>
+										<v8:item>
+											<v8:lang>ru</v8:lang>
+											<v8:content>Сгенерировать</v8:content>
+										</v8:item>
+									</Title>
+									<CommandName>Form.Command.СгенерироватьПользовательскийКлюч</CommandName>
+									<ExtendedTooltip name="КнопкаСгенерироватьКлючРасширеннаяПодсказка" id="184"/>
+								</Button>
 							</ChildItems>
 						</UsualGroup>
 					</ChildItems>
@@ -1069,6 +1243,49 @@
 				<v8:Type>xs:boolean</v8:Type>
 			</Type>
 		</Attribute>
+		<Attribute name="ИнструментВключен_GetScreenshot" id="160">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="РежимАутентификацииПерезапуска" id="161">
+			<Type>
+				<v8:Type>xs:decimal</v8:Type>
+				<v8:NumberQualifiers>
+					<v8:Digits>1</v8:Digits>
+					<v8:FractionDigits>0</v8:FractionDigits>
+					<v8:AllowedSign>Nonnegative</v8:AllowedSign>
+				</v8:NumberQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ПарольПерезапуска" id="162">
+			<Type>
+				<v8:Type>xs:string</v8:Type>
+				<v8:StringQualifiers>
+					<v8:Length>0</v8:Length>
+					<v8:AllowedLength>Variable</v8:AllowedLength>
+				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ПользовательскийКлючШифрования" id="182">
+			<Type>
+				<v8:Type>xs:string</v8:Type>
+				<v8:StringQualifiers>
+					<v8:Length>20</v8:Length>
+					<v8:AllowedLength>Variable</v8:AllowedLength>
+				</v8:StringQualifiers>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_Restart1cSession" id="174">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
+		<Attribute name="ИнструментВключен_Close1cSession" id="175">
+			<Type>
+				<v8:Type>xs:boolean</v8:Type>
+			</Type>
+		</Attribute>
 	</Attributes>
 	<Commands>
 		<Command name="Подключиться" id="1">
@@ -1124,6 +1341,9 @@
 				</v8:item>
 			</Title>
 			<Action>АнонимизироватьТекст</Action>
+		</Command>
+		<Command name="СгенерироватьПользовательскийКлюч" id="185">
+			<Action>СгенерироватьПользовательскийКлючНажатие</Action>
 		</Command>
 	</Commands>
 	<Events>

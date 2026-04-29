@@ -4,9 +4,10 @@ C++ компонента для загрузки внутрь процесса 1
 
 ## Требования
 
-- Windows (x86 или x64)
+- Windows (x86 или x64) или Linux (x86_64)
 - CMake 3.16+
-- Visual Studio 2022 (MSVC)
+- Windows: Visual Studio 2022 (MSVC)
+- Linux: Docker Desktop (для сборки через Docker)
 
 ## Сборка
 
@@ -26,6 +27,19 @@ cmake --build build_x86 --config Release
 # Результат: build_x86/Release/ToonConverter.dll
 ```
 
+## Сборка под Linux (через Docker)
+
+Требования: Docker Desktop на Windows.
+
+```bat
+native_components\ToonConverter\build_linux.bat
+```
+
+Результат: `build_linux/ToonConverter.so`
+
+База образа — Ubuntu 20.04 (glibc 2.31). Подходит для RedOS 8.x и большинства Linux-серверов 1С.
+Для RedOS 7.x замените базу в `Dockerfile.linux` на `debian:buster`.
+
 ## Установка в обработку
 
 Скопируйте DLL нужной разрядности в макет обработки под именем `Template.bin`:
@@ -37,6 +51,10 @@ cp build/Release/ToonConverter.dll \
 
 # x86
 cp build_x86/Release/ToonConverter.dll \
+   ../../1c/MCPToolkit/MCPToolkit/Templates/ToonConverter/Ext/Template.bin
+
+# Linux
+cp build_linux/ToonConverter.so \
    ../../1c/MCPToolkit/MCPToolkit/Templates/ToonConverter/Ext/Template.bin
 ```
 

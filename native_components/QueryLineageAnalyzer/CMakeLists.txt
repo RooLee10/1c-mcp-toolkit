@@ -36,7 +36,6 @@ add_library(${PROJECT_NAME} SHARED
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ToonConverter/include
 )
 
 if(WIN32)
@@ -50,6 +49,11 @@ if(WIN32)
         PREFIX ""
         OUTPUT_NAME "QueryLineageAnalyzer"
         LINK_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/src/QueryLineageAnalyzer.def"
+    )
+else()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        PREFIX ""
+        OUTPUT_NAME "QueryLineageAnalyzer"
     )
 endif()
 
@@ -71,12 +75,22 @@ if(QUERY_LINEAGE_BUILD_TESTS)
         src/lineage_resolver.cpp
         src/schema_enricher.cpp
         src/json_utils.cpp
+        src/component.cpp
     )
 
     target_include_directories(test_query_lineage PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
+
+    if(WIN32)
+        target_compile_definitions(test_query_lineage PRIVATE
+            _WINDOWS
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            _CRT_SECURE_NO_WARNINGS
+        )
+    endif()
 
     if(MSVC)
         target_compile_options(test_query_lineage PRIVATE /W3 /utf-8 /EHsc)

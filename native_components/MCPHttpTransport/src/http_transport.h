@@ -53,6 +53,10 @@ public:
     int GetMaxConcurrentRequests() const { return max_concurrent_.load(); }
     void SetMaxConcurrentRequests(int max) { max_concurrent_.store(max); }
 
+#ifdef MCPHTTPTRANSPORT_SMOKE_TEST
+    friend struct SmokeTest;
+#endif
+
 private:
     // Route handlers
     void HandleMCPPost(const httplib::Request& req, httplib::Response& res);

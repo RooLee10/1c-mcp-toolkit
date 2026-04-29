@@ -47,6 +47,10 @@ public:
     // LocaleBase
     void ADDIN_API SetLocale(const WCHAR_T* loc) override;
 
+#ifdef MCPHTTPTRANSPORT_SMOKE_TEST
+    friend struct SmokeTest;
+#endif
+
 private:
     // Property indices
     enum Props {

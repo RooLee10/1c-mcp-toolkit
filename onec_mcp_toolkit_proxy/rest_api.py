@@ -28,7 +28,8 @@ from .tools import (
     validate_find_references_to_object_params,
     validate_get_access_rights_params,
     GetBslSyntaxHelpParams,
-    SubmitForDeanonymizationParams
+    SubmitForDeanonymizationParams,
+    GetScreenshotParams,
 )
 from .channel_registry import ChannelRegistry, DEFAULT_CHANNEL
 
@@ -1229,4 +1230,41 @@ async def submit_for_deanonymization_handler(request: Request) -> JSONResponse:
 
     channel = _get_channel(request)
     result = await _execute_1c_command("submit_for_deanonymization", body, channel=channel)
+    return JSONResponse(content=result)
+
+
+async def get_screenshot_handler(request: Request) -> JSONResponse:
+    """POST /api/get_screenshot"""
+    content_type_error = _check_content_type(request)
+    if content_type_error:
+        return content_type_error
+
+    body, parse_error = await _parse_json_body_with_encoding_detection(request)
+    if parse_error:
+        return parse_error
+
+    try:
+        validated = GetScreenshotParams.model_validate(body)
+    except ValidationError as e:
+        return _validation_error_response(e)
+
+    channel = _get_channel(request)
+    result = await _execute_1c_command(
+        "get_screenshot", validated.model_dump(exclude_none=True), channel)
+    return JSONResponse(content=result)
+
+
+async def restart_1c_session_handler(request: Request) -> JSONResponse:
+    """POST /api/restart_1c_session"""
+    channel = _get_channel(request)
+    RESTART_TIMEOUT = max(float(settings.timeout), 150.0)
+    result = await _execute_1c_command("restart_1c_session", {}, channel, timeout=RESTART_TIMEOUT)
+    return JSONResponse(content=result)
+
+
+async def close_1c_session_handler(request: Request) -> JSONResponse:
+    """POST /api/close_1c_session"""
+    channel = _get_channel(request)
+    CLOSE_TIMEOUT = max(float(settings.timeout), 150.0)
+    result = await _execute_1c_command("close_1c_session", {}, channel, timeout=CLOSE_TIMEOUT)
     return JSONResponse(content=result)

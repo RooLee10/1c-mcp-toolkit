@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cwctype>
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -61,7 +62,7 @@ bool SyntaxHelpReaderComponent::RegisterExtensionAs(WCHAR_T** wsExtensionName) {
 long SyntaxHelpReaderComponent::GetNMethods() { return eMethodLast; }
 
 long SyntaxHelpReaderComponent::FindMethod(const WCHAR_T* wsMethodName) {
-    std::wstring name(wsMethodName);
+    std::wstring name = WcharTToWstr(wsMethodName);
     auto lower = [](std::wstring s) {
         std::transform(s.begin(), s.end(), s.begin(), ::towlower);
         return s;
@@ -280,6 +281,18 @@ std::wstring SyntaxHelpReaderComponent::Utf8ToWstr(const std::string& s) {
         out += static_cast<wchar_t>(cp);
         i += seq;
     }
+    return out;
+#endif
+}
+
+std::wstring SyntaxHelpReaderComponent::WcharTToWstr(const WCHAR_T* s) {
+    if (!s) return {};
+#ifdef _WINDOWS
+    return std::wstring(s);
+#else
+    std::wstring out;
+    for (const WCHAR_T* p = s; *p; ++p)
+        out += static_cast<wchar_t>(*p);
     return out;
 #endif
 }

@@ -148,7 +148,7 @@ Value loadJson(const std::string& filename) {
                     return yyjson_mut_real(doc, arg);
                 else // std::string
                     return yyjson_mut_strcpy(doc, arg.c_str());
-            }, p);
+            }, static_cast<const Primitive::Base&>(p));
         }
 
         if (val.isArray()) {

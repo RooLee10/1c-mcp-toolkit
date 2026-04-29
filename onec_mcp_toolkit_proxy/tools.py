@@ -10,7 +10,7 @@ Validates: Requirements 2.1, 2.5, 2.6, 3.1, 4.1
 import re
 import json
 from typing import Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, Field, StrictBool, field_validator, model_validator
+from pydantic import BaseModel, Field, RootModel, StrictBool, field_validator, model_validator
 
 
 # Valid event log levels
@@ -1557,6 +1557,181 @@ class GetBslSyntaxHelpParams(BaseModel):
         return cleaned
 
 
+class RegionParams(BaseModel):
+    x:      int = Field(..., ge=0, le=32767, description="X offset from client-area top-left in original pixels")
+    y:      int = Field(..., ge=0, le=32767, description="Y offset from client-area top-left in original pixels")
+    width:  int = Field(..., ge=1, le=32767, description="Width of the region in original pixels")
+    height: int = Field(..., ge=1, le=32767, description="Height of the region in original pixels")
+
+    @field_validator('x', 'y', 'width', 'height', mode='before')
+    @classmethod
+    def reject_bool(cls, v):
+        if isinstance(v, bool):
+            raise ValueError('Input should be a valid integer, not boolean')
+        return v
+
+
+HIGHLIGHT_RECTS_MAX = 20
+
+
+class HighlightRectItem(BaseModel):
+    x:      int = Field(..., ge=0, le=32767)
+    y:      int = Field(..., ge=0, le=32767)
+    width:  int = Field(..., ge=1, le=32767)
+    height: int = Field(..., ge=1, le=32767)
+
+    @field_validator('x', 'y', 'width', 'height', mode='before')
+    @classmethod
+    def reject_bool(cls, v):
+        if isinstance(v, bool):
+            raise ValueError('Input should be a valid integer, not boolean')
+        return v
+
+
+class HighlightRectsParam(RootModel[List[HighlightRectItem]]):
+    @model_validator(mode='after')
+    def check_no_overlaps(self) -> 'HighlightRectsParam':
+        rects = self.root
+        if len(rects) > HIGHLIGHT_RECTS_MAX:
+            raise ValueError(f'highlight_rects must not exceed {HIGHLIGHT_RECTS_MAX} items')
+        for i in range(len(rects)):
+            for j in range(i + 1, len(rects)):
+                a, b = rects[i], rects[j]
+                if not (a.x + a.width <= b.x or b.x + b.width <= a.x or
+                        a.y + a.height <= b.y or b.y + b.height <= a.y):
+                    raise ValueError(f'Rectangle {i+1} and Rectangle {j+1} overlap')
+        return self
+
+
+GET_SCREENSHOT_SCHEMA = {
+    "name": "get_screenshot",
+    "description": "Take a screenshot of the active 1C application window and return it as base64 PNG. If form_name is specified, the form will be opened and then closed after the screenshot is captured.",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "form_name": {
+                "type": "string",
+                "description": "Optional. 1C form name to open before capture. The form will be automatically closed after the screenshot is taken. If omitted, captures the current active 1C window.",
+            },
+            "scale_percent": {
+                "type": "integer",
+                "default": 100,
+                "minimum": 10,
+                "maximum": 200,
+                "description": "Output image scale (10–200, default 100). Values above 100 produce a larger image with more detail (e.g. 200 = 2× size). Values below 100 produce a smaller image (e.g. 50 = half size). Grid coordinate labels always show original window pixel coordinates regardless of scale.",
+            },
+            "show_grid": {
+                "type": "boolean",
+                "default": False,
+                "description": "If true, draws a grid on the screenshot (up to 10×10, dynamic density based on image size — small regions get fewer lines or none): red lines, yellow coordinate labels (px) on black background at each axis, red dots at intersections. Coordinate origin (0, 0) is at the top-left corner of the captured image. Grid line coordinates are also returned as text (grid_coords).",
+            },
+            "region": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "x":      {"type": "integer", "minimum": 0, "maximum": 32767, "description": "X offset from client-area top-left"},
+                            "y":      {"type": "integer", "minimum": 0, "maximum": 32767, "description": "Y offset from client-area top-left"},
+                            "width":  {"type": "integer", "minimum": 1, "maximum": 32767, "description": "Width of region"},
+                            "height": {"type": "integer", "minimum": 1, "maximum": 32767, "description": "Height of region"},
+                        },
+                        "required": ["x", "y", "width", "height"],
+                    },
+                    {"type": "null"},
+                ],
+                "description": "Optional. Crop the captured window to this sub-region before scaling. Omit or set null for full window. Coordinates are in original client-area pixels. Returns an error if the region extends outside the window.",
+                "default": None,
+            },
+            "highlight_rects": {
+                "anyOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "x":      {"type": "integer", "minimum": 0, "maximum": 32767},
+                                "y":      {"type": "integer", "minimum": 0, "maximum": 32767},
+                                "width":  {"type": "integer", "minimum": 1, "maximum": 32767},
+                                "height": {"type": "integer", "minimum": 1, "maximum": 32767},
+                            },
+                            "required": ["x", "y", "width", "height"],
+                        },
+                    },
+                    {"type": "null"},
+                ],
+                "description": "Optional. Draw numbered blue rectangles (3 px, RGB 0,120,255) on the screenshot. Each rectangle is labeled with its 1-based index. Rectangles must not overlap — returns error if they do. Coordinates are in original client-area pixels, origin (0, 0) at the top-left corner of the captured image (same coordinate space as grid labels).",
+                "default": None,
+            },
+        },
+        "required": [],
+    },
+}
+
+
+class GetScreenshotParams(BaseModel):
+    form_name: Optional[str] = Field(default=None)
+    scale_percent: int = Field(default=100, ge=10, le=200)
+    show_grid: bool = Field(default=False)
+    region: Optional[RegionParams] = None
+    highlight_rects: Optional[HighlightRectsParam] = None
+
+    @field_validator('form_name')
+    @classmethod
+    def form_name_not_whitespace(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                raise ValueError('form_name cannot be empty or whitespace only')
+            return stripped
+        return v
+
+    @model_validator(mode='after')
+    def normalize_empty_highlight_rects(self) -> 'GetScreenshotParams':
+        if self.highlight_rects is not None and len(self.highlight_rects.root) == 0:
+            self.highlight_rects = None
+        return self
+
+
+RESTART_1C_SESSION_SCHEMA = {
+    "name": "restart_1c_session",
+    "description": (
+        "Restart the current 1C session — the session that executes 1C tool calls. "
+        "A restart is typically required after updating the 1C configuration (metadata, extensions, BSL code) "
+        "so the new session picks up the changes. The new session starts automatically with the same database "
+        "and connection settings; anonymization state is preserved. The current session shuts down once the new one is ready. "
+        "IMPORTANT: Do NOT call this tool on your own initiative. Only invoke it when explicitly instructed — "
+        "either by the user directly or as a defined step in a pipeline or task specification. "
+        "Never infer that a restart is needed and call it autonomously."
+    ),
+    "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+    }
+}
+
+CLOSE_1C_SESSION_SCHEMA = {
+    "name": "close_1c_session",
+    "description": (
+        "Close the current 1C session — the session that executes 1C tool calls — and return a launcher script command to start a new one. "
+        "Use this when exclusive database access is needed (e.g. configuration update). "
+        "The response text contains the shell command to run the launcher script. "
+        "Run it synchronously: exit 0 means the session is ready. "
+        "On Windows, run the command in PowerShell (not cmd.exe). "
+        "On timeout, check whether a 1C process was started before launching another. "
+        "On non-timeout exit 1, read the output: pre-launch errors are safe to retry after fixing the cause; "
+        "failed startup errors close the failed new instance automatically. "
+        "NOTE: on Linux with password auth, python3 must be available on PATH. "
+        "IMPORTANT: Do NOT call this tool on your own initiative. Only invoke when explicitly instructed."
+    ),
+    "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+    }
+}
+
 # List of all tool schemas
 ALL_TOOL_SCHEMAS = [
     EXECUTE_QUERY_SCHEMA,
@@ -1568,6 +1743,9 @@ ALL_TOOL_SCHEMAS = [
     FIND_REFERENCES_TO_OBJECT_SCHEMA,
     GET_ACCESS_RIGHTS_SCHEMA,
     GET_BSL_SYNTAX_HELP_SCHEMA,
+    GET_SCREENSHOT_SCHEMA,
+    RESTART_1C_SESSION_SCHEMA,
+    CLOSE_1C_SESSION_SCHEMA,
 ]
 
 

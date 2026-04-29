@@ -1,6 +1,6 @@
 # Tools Full Reference
 
-Complete parameter tables, curl examples, and response structures for all 10 REST API endpoints.
+Complete parameter tables, curl examples, and response structures for all 12 REST API endpoints.
 
 > **Convention**: all examples use the variables from Quick Start:
 > ```sh
@@ -923,6 +923,114 @@ Error (wrong method, built-in mode):
   "success": false,
   "error": "Method not allowed: submit_for_deanonymization requires POST"
 }
+```
+
+---
+
+## 11. restart_1c_session — `POST /api/restart_1c_session`
+
+Restart the current 1C session. A new session starts automatically with the same database and connection settings; anonymization state is preserved. The old session shuts down once the new one is ready.
+
+> **IMPORTANT**: Do NOT call on your own initiative. Only invoke when explicitly instructed by the user or as a defined step in a pipeline specification.
+
+### Parameters
+
+None. Send an empty body `{}` or omit the body entirely.
+
+### Timeout
+
+The operation can take up to 120 seconds (new session startup). Use `curl --max-time 200` (or above the proxy timeout).
+
+### Example
+
+```sh
+curl --max-time 200 -sS --noproxy $BASE_HOST "$BASE_URL/api/restart_1c_session?channel=$CHANNEL" $J \
+  -d '{}'
+```
+
+### Response (success)
+
+```json
+{
+  "success": true,
+  "data": "Session restarted successfully. Note: the first MCP request to the new session may fail - retry once if it does."
+}
+```
+
+### Error responses
+
+```json
+{"success": false, "error": "Restart timeout: new session did not start in 120 seconds"}
+{"success": false, "error": "Failed to launch new session: <OS error detail>"}
+{"success": false, "error": "Cannot restart: data processor path is not available (not running from file?)"}
+{"success": false, "error": "Cannot restart: data processor file not found: /path/to/file.epf"}
+{"success": false, "error": "Windows authentication is not available on the current OS"}
+```
+
+HTTP 500 (concurrent call):
+```json
+{"success": false, "error": "Restart or close already in progress"}
+```
+
+---
+
+## 12. close_1c_session — `POST /api/close_1c_session`
+
+Close the current 1C session and receive a launcher script command to start a new one. Use when exclusive database access is needed (e.g., configuration update).
+
+On success the session closes immediately, and `data` contains the shell command to launch a fresh session. Run it synchronously: exit 0 = session ready; non-zero = startup failed.
+
+> **IMPORTANT**: Do NOT call on your own initiative. Only invoke when explicitly instructed.
+
+### Parameters
+
+None. Send an empty body `{}` or omit the body entirely.
+
+### Timeout
+
+Use `curl --max-time 200`. The endpoint responds as soon as the launcher script is prepared and the old session begins shutting down (fast).
+
+### Example
+
+```sh
+curl --max-time 200 -sS --noproxy $BASE_HOST "$BASE_URL/api/close_1c_session?channel=$CHANNEL" $J \
+  -d '{}'
+```
+
+### Response (success)
+
+`data` is a multi-line **string** containing the command and usage notes:
+
+```json
+{
+  "success": true,
+  "data": "Session closed. To start a new session, run:\npowershell -ExecutionPolicy Bypass -File 'C:\\path\\to\\launcher.ps1'\nRun synchronously. Exit 0 = session ready. Non-zero = startup failed. On Windows, run this command in PowerShell (not cmd.exe). On timeout: startup state is unknown — check whether 1C was already started before launching another. On non-timeout exit 1: the launcher either did not start 1C, or the failed new instance was closed — safe to retry."
+}
+```
+
+### Launcher script behavior
+
+| Exit code | Meaning |
+|-----------|---------|
+| 0 | New session started successfully |
+| 1 (non-timeout) | Pre-launch error or failed startup — safe to retry after fixing the cause |
+| 1 (timeout after 120 s) | State unknown — check whether a 1C process was already started before launching another |
+
+- **Windows**: run the command in PowerShell (not cmd.exe)
+- **Linux with password auth**: `python3` must be available on PATH
+
+### Error responses
+
+```json
+{"success": false, "error": "Cannot close: data processor path not available"}
+{"success": false, "error": "Cannot close: data processor file not found: /path/to/file.epf"}
+{"success": false, "error": "Windows authentication is not available on the current OS"}
+{"success": false, "error": "close_1c_session error: <detail>"}
+```
+
+HTTP 500 (concurrent call):
+```json
+{"success": false, "error": "Restart or close already in progress"}
 ```
 
 

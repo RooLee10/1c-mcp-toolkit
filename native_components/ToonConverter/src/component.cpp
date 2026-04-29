@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <cwctype>
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -181,7 +182,21 @@ std::string ToonConverterComponent::WStringToUTF8(const std::wstring& wstr) {
     return result;
 #else
     std::string result;
-    for (wchar_t ch : wstr) {
+    size_t i = 0;
+    while (i < wstr.size()) {
+        uint32_t ch = static_cast<uint32_t>(wstr[i]);
+        // Combine surrogate pair into single code point
+        if (ch >= 0xD800 && ch <= 0xDBFF && i + 1 < wstr.size()) {
+            uint32_t lo = static_cast<uint32_t>(wstr[i + 1]);
+            if (lo >= 0xDC00 && lo <= 0xDFFF) {
+                ch = 0x10000 + ((ch - 0xD800) << 10) + (lo - 0xDC00);
+                i += 2;
+            } else {
+                ++i; // lone high surrogate — encode as-is
+            }
+        } else {
+            ++i;
+        }
         if (ch < 0x80) {
             result += static_cast<char>(ch);
         } else if (ch < 0x800) {
@@ -238,7 +253,14 @@ std::wstring ToonConverterComponent::UTF8ToWString(const std::string& str) {
             if (i + 3 < str.size()) ch |= (str[i + 3] & 0x3F);
             i += 4;
         }
-        result += static_cast<wchar_t>(ch);
+        if (ch >= 0x10000) {
+            // Split into surrogate pair
+            ch -= 0x10000;
+            result += static_cast<wchar_t>(0xD800 + (ch >> 10));
+            result += static_cast<wchar_t>(0xDC00 + (ch & 0x3FF));
+        } else {
+            result += static_cast<wchar_t>(ch);
+        }
     }
     return result;
 #endif

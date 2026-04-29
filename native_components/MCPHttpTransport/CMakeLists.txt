@@ -4,6 +4,8 @@ project(MCPHttpTransport LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Threads REQUIRED)
+
 # Static CRT linkage — no dependency on vcruntime140.dll
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -53,6 +55,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+
 # Windows-specific settings
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -70,6 +74,11 @@ if(WIN32)
         OUTPUT_NAME "MCPHttpTransport"
         LINK_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/src/MCPHttpTransport.def"
     )
+else()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        PREFIX ""
+        OUTPUT_NAME "MCPHttpTransport"
+    )
 endif()
 
 # cpp-httplib: do NOT define CPPHTTPLIB_OPENSSL_SUPPORT — we don't use TLS
@@ -80,4 +89,22 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W3 /utf-8)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
+endif()
+
+option(MCPHTTPTRANSPORT_SMOKE_TEST "Build smoke test" OFF)
+if(MCPHTTPTRANSPORT_SMOKE_TEST)
+    add_executable(mcp_smoke_test
+        tests/smoke_test.cpp
+        src/component.cpp
+        src/http_transport.cpp
+        src/pending_requests.cpp
+        src/sse_stream.cpp
+    )
+    target_include_directories(mcp_smoke_test PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    target_compile_definitions(mcp_smoke_test PRIVATE MCPHTTPTRANSPORT_SMOKE_TEST)
+    target_compile_options(mcp_smoke_test PRIVATE -Wall -Wextra -fexceptions)
+    target_link_libraries(mcp_smoke_test PRIVATE Threads::Threads)
 endif()

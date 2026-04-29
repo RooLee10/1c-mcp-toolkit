@@ -47,7 +47,10 @@ from .rest_api import (
     find_references_to_object_handler,
     get_access_rights_handler,
     get_bsl_syntax_help_handler,
-    submit_for_deanonymization_handler
+    submit_for_deanonymization_handler,
+    get_screenshot_handler,
+    restart_1c_session_handler,
+    close_1c_session_handler,
 )
 from .anonymizer.registry import AnonymizerRegistry
 
@@ -478,6 +481,9 @@ routes = [
     Route("/api/get_access_rights", get_access_rights_handler, methods=["POST"]),
     Route("/api/get_bsl_syntax_help", get_bsl_syntax_help_handler, methods=["POST"]),
     Route("/api/submit_for_deanonymization", submit_for_deanonymization_handler, methods=["POST"]),
+    Route("/api/get_screenshot", get_screenshot_handler, methods=["POST"]),
+    Route("/api/restart_1c_session", restart_1c_session_handler, methods=["POST"]),
+    Route("/api/close_1c_session", close_1c_session_handler, methods=["POST"]),
 ]
 
 app = Starlette(

@@ -14,13 +14,15 @@ Validates: Requirements 2.1, 3.1, 4.1, Event Log 1.1
 """
 
 import asyncio
+import json
 import logging
 import unicodedata
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.fastmcp import FastMCP, Context
 from mcp.server.transport_security import TransportSecuritySettings
-from pydantic import ValidationError
+from mcp.types import ImageContent, TextContent
+from pydantic import Field, ValidationError
 
 from .command_queue import channel_command_queue
 from .config import settings
@@ -37,6 +39,10 @@ from .tools import (
     validate_find_references_to_object_params,
     validate_get_access_rights_params,
     GetBslSyntaxHelpParams,
+    GetScreenshotParams,
+    HighlightRectItem,
+    HighlightRectsParam,
+    RegionParams,
 )
 
 logger = logging.getLogger(__name__)
@@ -254,22 +260,24 @@ mcp = FastMCP(
 )
 
 
-async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = "default") -> Dict[str, Any]:
+async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = "default", timeout: Optional[float] = None) -> Dict[str, Any]:
     """
     Execute a command on the 1C client and wait for the result.
-    
+
     Args:
         tool: Name of the tool (execute_query, execute_code, get_metadata)
         params: Parameters for the tool
         channel: Channel ID for routing the command
-        
+        timeout: Override timeout in seconds (uses settings.timeout if None)
+
     Returns:
         Result from 1C processing
-        
+
     Validates: Requirements 6.2, 6.3
     - 6.2: Прокси возвращает понятную ошибку если обработка 1С не подключена
     - 6.3: Таймаут запроса к 1С не блокирует прокси для других операций
     """
+    effective_timeout = float(timeout if timeout is not None else settings.timeout)
     # Check if 1C client is connected by checking if there was recent activity
     # If there are too many pending commands, 1C might not be connected
     channel_stats = await channel_command_queue.get_stats()
@@ -310,8 +318,8 @@ async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = 
         # Wait for result with timeout (non-blocking for other operations)
         # Validates: Requirement 6.3 - timeout doesn't block proxy for other operations
         result = await channel_command_queue.wait_for_result(
-            command_id, 
-            timeout=float(settings.timeout)
+            command_id,
+            timeout=effective_timeout
         )
         logger.info(f"Command {command_id} completed successfully on channel '{channel}'")
 
@@ -329,12 +337,12 @@ async def _execute_1c_command(tool: str, params: Dict[str, Any], channel: str = 
         return format_tool_result(result, settings.response_format)
     except asyncio.TimeoutError:
         # Validates: Requirement 6.2 - clear error message when 1C not responding
-        logger.error(f"Command {command_id} timed out after {settings.timeout}s on channel '{channel}'")
+        logger.error(f"Command {command_id} timed out after {effective_timeout}s on channel '{channel}'")
         return {
             "success": False,
-            "error": f"Таймаут ожидания ответа от 1С на канале '{channel}' (>{settings.timeout}с). "
+            "error": f"Таймаут ожидания ответа от 1С на канале '{channel}' (>{effective_timeout}с). "
                      "Убедитесь, что клиент 1С подключён с тем же channel ID. / "
-                     f"Timeout waiting for 1C response on channel '{channel}' (>{settings.timeout}s). "
+                     f"Timeout waiting for 1C response on channel '{channel}' (>{effective_timeout}s). "
                      "Make sure 1C client is connected with the same channel ID."
         }
     except KeyError as e:
@@ -1366,6 +1374,126 @@ async def get_bsl_syntax_help(
         return {"success": False, "error": e.errors()[0]["msg"] if e.errors() else str(e)}
     result = await _execute_1c_command(
         "get_bsl_syntax_help", validated.model_dump(), channel=channel)
+    return result
+
+
+@mcp.tool()
+async def get_screenshot(
+    ctx: Context,
+    form_name: Optional[str] = None,
+    scale_percent: int = 100,
+    show_grid: bool = False,
+    region: Optional[RegionParams] = None,
+    highlight_rects: Optional[Annotated[List[HighlightRectItem], Field(max_length=20)]] = None,
+) -> Union[List[Union[ImageContent, TextContent]], ImageContent, Dict[str, Any]]:
+    """
+    Take a screenshot of the active 1C application window and return it as base64 PNG.
+
+    Args:
+        form_name: Optional. Full 1C form name (e.g. "Справочник.Контрагенты.Форма.ФормаЭлемента").
+                   If provided, opens the form before capturing the window, then automatically closes the form.
+                   If omitted, captures the current active 1C window immediately.
+        scale_percent: Output image scale (10–200, default 100). Values above 100 produce a larger
+                       image with more detail (e.g. 200 = 2× size). Values below 100 produce a smaller
+                       image (e.g. 50 = half size). Grid coordinate labels always show original window
+                       pixel coordinates regardless of scale.
+        show_grid: If true, draws a grid on the screenshot (up to 10×10, dynamic density based
+                   on image size — small regions get fewer lines or none): red lines, yellow
+                   coordinate labels (px) on black background at each axis, red dots at
+                   intersections. Coordinate origin (0, 0) is at the top-left corner of the
+                   captured image. Grid line coordinates are also returned as text (grid_coords).
+        region: Optional. Crop to a sub-region before scaling. Provide x, y (≥0), width, height (≥1)
+                in original client-area pixels. Omit or pass None for full window. Returns an error
+                if the region extends outside the window bounds.
+        highlight_rects: Optional. List of rectangles to draw on the screenshot as numbered blue frames (3 px).
+                         Each item: {x, y, width, height} in original client-area pixels, origin (0, 0) at
+                         the top-left corner of the captured image (same coordinate space as grid labels).
+                         Rectangles are labeled 1, 2, 3… in array order. Labels appear
+                         outside above the top-right corner (inside if there is not enough space above).
+                         Rectangles must not overlap — returns an error specifying which ones do.
+                         Omit or pass None to draw no rectangles.
+
+    Returns:
+        Image content (PNG) on success, or error on failure.
+    """
+    channel = _get_channel_from_context(ctx)
+    try:
+        validated = GetScreenshotParams(
+            form_name=form_name,
+            scale_percent=scale_percent,
+            show_grid=show_grid,
+            region=region,
+            highlight_rects=HighlightRectsParam(highlight_rects) if highlight_rects else None,
+        )
+    except ValidationError as e:
+        return {"success": False, "error": e.errors()[0]["msg"] if e.errors() else str(e)}
+
+    params: Dict[str, Any] = {
+        "scale_percent": validated.scale_percent,
+        "show_grid": validated.show_grid,
+    }
+    if validated.form_name is not None:
+        params["form_name"] = validated.form_name
+    if validated.region is not None:
+        params["region"] = validated.region.model_dump()
+    if validated.highlight_rects is not None and len(validated.highlight_rects.root) > 0:
+        params["highlight_rects"] = validated.highlight_rects.model_dump()
+
+    result = await _execute_1c_command(
+        "get_screenshot",
+        params,
+        channel=channel,
+    )
+
+    # BSL returns image_base64 at the top level (not under "data"),
+    # so format_tool_result in TOON mode does not touch it.
+    if isinstance(result, dict) and result.get("success") and result.get("image_base64"):
+        image = ImageContent(
+            type="image",
+            data=result["image_base64"],
+            mimeType=result.get("mime_type", "image/png"),
+        )
+        window_rect = result.get("window_rect")
+        grid_coords = result.get("grid_coords")
+        if isinstance(window_rect, dict):
+            parts: list = [image, TextContent(type="text", text=json.dumps(window_rect))]
+            if isinstance(grid_coords, dict):
+                parts.append(TextContent(type="text", text=json.dumps(grid_coords)))
+            return parts
+        return image
+    return result
+
+
+@mcp.tool()
+async def restart_1c_session(ctx: Context) -> Dict[str, Any]:
+    """Restart the current 1C session — the session that executes 1C tool calls.
+    A restart is typically required after updating the 1C configuration (metadata, extensions, BSL code)
+    so the new session picks up the changes. The new session starts automatically with the same database
+    and connection settings; anonymization state is preserved. The current session shuts down once the new one is ready.
+
+    IMPORTANT: Do NOT call this tool on your own initiative. Only invoke it when explicitly instructed —
+    either by the user directly or as a defined step in a pipeline or task specification.
+    Never infer that a restart is needed and call it autonomously."""
+    channel = _get_channel_from_context(ctx)
+    RESTART_TIMEOUT = max(float(settings.timeout), 150.0)
+    result = await _execute_1c_command("restart_1c_session", {}, channel, timeout=RESTART_TIMEOUT)
+    return result
+
+
+@mcp.tool()
+async def close_1c_session(ctx: Context) -> Dict[str, Any]:
+    """Close the current 1C session — the session that executes 1C tool calls — and return a launcher script command to start a new one.
+    Use when exclusive database access is needed (e.g. updating configuration).
+    Run the returned command synchronously: exit 0 means the session is ready.
+    On Windows, run the command in PowerShell (not cmd.exe).
+    On timeout, check whether a 1C process was started before launching another.
+    On non-timeout exit 1, read the output: pre-launch errors are safe to retry after fixing the cause;
+    failed startup errors close the failed new instance automatically.
+    NOTE: on Linux with password auth, python3 must be available on PATH.
+    IMPORTANT: Do NOT call this on your own initiative."""
+    channel = _get_channel_from_context(ctx)
+    CLOSE_TIMEOUT = max(float(settings.timeout), 150.0)
+    result = await _execute_1c_command("close_1c_session", {}, channel, timeout=CLOSE_TIMEOUT)
     return result
 
 

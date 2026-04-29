@@ -2,12 +2,13 @@
 name: calling-1c-rest-api-via-curl
 description: >
   Access a 1C:Enterprise database through the 1C MCP Toolkit REST API using curl.
-  Provides 10 endpoints under /api/ for querying data (execute_query), exploring metadata
+  Provides 12 endpoints under /api/ for querying data (execute_query), exploring metadata
   (get_metadata), reading event logs (get_event_log), checking access rights
   (get_access_rights), finding object references (find_references_to_object), navigating
   objects by link (get_object_by_link, get_link_of_object), executing 1C code
-  (execute_code), looking up BSL language reference (get_bsl_syntax_help), and submitting
-  text for de-anonymization (submit_for_deanonymization, when anonymization is enabled).
+  (execute_code), looking up BSL language reference (get_bsl_syntax_help), submitting
+  text for de-anonymization (submit_for_deanonymization, when anonymization is enabled),
+  and session management (restart_1c_session, close_1c_session).
   Use when the agent needs to interact with a 1C database via HTTP but does not speak MCP.
   Supports channel isolation for multi-database routing.
 ---
@@ -363,6 +364,38 @@ curl -sS --noproxy $BASE_HOST "$BASE_URL/api/submit_for_deanonymization?channel=
 Response: `{"received": true}`
 
 Error: `{"success": false, "error": "Tool is not available: anonymization is disabled"}`
+
+---
+
+### 11. restart_1c_session — `POST /api/restart_1c_session`
+
+Restart the current 1C session (picks up configuration changes). No parameters. New session starts automatically with same settings; anonymization state preserved. Old session shuts down after new one is ready.
+
+> **IMPORTANT**: Only call when explicitly instructed by the user or pipeline spec — never autonomously.
+
+Use `--max-time 200` (startup can take up to 120 s).
+
+```sh
+curl --max-time 200 -sS --noproxy $BASE_HOST "$BASE_URL/api/restart_1c_session?channel=$CHANNEL" $J -d '{}'
+```
+
+Response: `{"success": true, "data": "Session restarted successfully. Note: the first MCP request to the new session may fail - retry once if it does."}`
+
+---
+
+### 12. close_1c_session — `POST /api/close_1c_session`
+
+Close the current 1C session and receive a launcher script command to start a new one. Use when exclusive DB access is needed (e.g., configuration update). No parameters.
+
+> **IMPORTANT**: Only call when explicitly instructed — never autonomously.
+
+On success, `data` is a string containing the shell command to launch a fresh session. Run it synchronously: exit 0 = session ready; non-zero = startup failed. On Windows, run in PowerShell (not cmd.exe).
+
+```sh
+curl --max-time 200 -sS --noproxy $BASE_HOST "$BASE_URL/api/close_1c_session?channel=$CHANNEL" $J -d '{}'
+```
+
+Response: `{"success": true, "data": "Session closed. To start a new session, run:\npowershell -ExecutionPolicy Bypass -File 'C:\\...\\launcher.ps1'\n..."}`
 
 ---
 

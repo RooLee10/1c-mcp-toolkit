@@ -1,6 +1,7 @@
 #include "component.h"
 
 #include "schema_enricher.h"
+#include "utf_utils.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -48,7 +49,7 @@ long QueryLineageAnalyzerComponent::GetNMethods() {
 long QueryLineageAnalyzerComponent::FindMethod(const WCHAR_T* wsMethodName) {
     std::wstring name = FromWCHAR_T(wsMethodName);
     auto lower = [](std::wstring s) {
-        std::transform(s.begin(), s.end(), s.begin(), ::towlower);
+        for (auto& ch : s) ch = static_cast<wchar_t>(LowercaseU16(static_cast<uint32_t>(ch)));
         return s;
     };
     std::wstring lower_name = lower(name);
@@ -150,9 +151,7 @@ std::string QueryLineageAnalyzerComponent::WStringToUTF8(const std::wstring& wst
     WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), static_cast<int>(wstr.size()), result.data(), size, nullptr, nullptr);
     return result;
 #else
-    std::string result;
-    for (wchar_t ch : wstr) result.push_back(static_cast<char>(ch));
-    return result;
+    return Utf16UnitsToUtf8(wstr);
 #endif
 }
 
@@ -165,9 +164,7 @@ std::wstring QueryLineageAnalyzerComponent::UTF8ToWString(const std::string& str
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), result.data(), size);
     return result;
 #else
-    std::wstring result;
-    for (unsigned char ch : str) result.push_back(static_cast<wchar_t>(ch));
-    return result;
+    return Utf8ToUtf16Units(str);
 #endif
 }
 
