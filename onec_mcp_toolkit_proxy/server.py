@@ -30,6 +30,7 @@ from mcp.server.streamable_http import (
     MCP_PROTOCOL_VERSION_HEADER,
     MCP_SESSION_ID_HEADER,
 )
+from . import __version__
 from .command_queue import command_queue, channel_command_queue
 from .config import settings
 from .mcp_handler import get_mcp_server
@@ -186,7 +187,7 @@ class MCPLoggingMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: Starlette):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
-    logger.info(f"1C MCP Toolkit Proxy starting on port {settings.port}")
+    logger.info(f"1C MCP Toolkit Proxy v{__version__} starting on port {settings.port}")
     logger.info(f"Log level: {settings.log_level}")
     logger.info(f"Command timeout: {settings.timeout}s")
     logger.info("MCP server available at /mcp endpoint")
@@ -222,6 +223,11 @@ class CommandResult(BaseModel):
     next_same_second_offset: Optional[int] = None    # Accumulated offset for next page
     # submit_for_deanonymization acknowledgement field
     received: Optional[bool] = None
+    # Screenshot result fields for get_screenshot
+    image_base64: Optional[str] = None
+    mime_type: Optional[str] = None
+    window_rect: Optional[Any] = None
+    grid_coords: Optional[Any] = None
 
 
 class HealthResponse(BaseModel):
@@ -337,6 +343,10 @@ async def receive_result(request: Request) -> JSONResponse:
         "last_date",                 # Cursor for get_event_log pagination
         "next_same_second_offset",   # Accumulated offset for compound cursor
         "received",                  # submit_for_deanonymization acknowledgement
+        "image_base64",              # get_screenshot: base64-encoded PNG
+        "mime_type",                 # get_screenshot: MIME type of the image
+        "window_rect",               # get_screenshot: captured window rectangle
+        "grid_coords",               # get_screenshot: grid line coordinates
     )
     for key in optional_meta_fields:
         value = getattr(result, key, None)

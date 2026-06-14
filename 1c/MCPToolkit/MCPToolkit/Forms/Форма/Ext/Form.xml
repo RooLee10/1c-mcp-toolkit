@@ -703,11 +703,33 @@
 					<Width>80</Width>
 					<ExtendedTooltip name="ЛогПолеРасширеннаяПодсказка" id="20"/>
 				</InputField>
-				<Button name="КнопкаОчиститьЖурнал" id="30">
-					<Type>UsualButton</Type>
-					<CommandName>Form.Command.ОчиститьЖурнал</CommandName>
-					<ExtendedTooltip name="КнопкаОчиститьЖурналРасширеннаяПодсказка" id="31"/>
-				</Button>
+				<UsualGroup name="ГруппаЛогПанель" id="186">
+					<Group>AlwaysHorizontal</Group>
+					<Representation>None</Representation>
+					<ShowTitle>false</ShowTitle>
+					<ExtendedTooltip name="ГруппаЛогПанельРасширеннаяПодсказка" id="187"/>
+					<ChildItems>
+						<Button name="КнопкаОчиститьЖурнал" id="30">
+							<Type>UsualButton</Type>
+							<CommandName>Form.Command.ОчиститьЖурнал</CommandName>
+							<ExtendedTooltip name="КнопкаОчиститьЖурналРасширеннаяПодсказка" id="31"/>
+						</Button>
+						<LabelDecoration name="НадписьВерсия" id="188">
+							<Title>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>v1.7.1</v8:content>
+								</v8:item>
+							</Title>
+							<AutoMaxWidth>false</AutoMaxWidth>
+							<HorizontalStretch>true</HorizontalStretch>
+							<HorizontalAlign>Right</HorizontalAlign>
+							<TextColor>web:Blue</TextColor>
+							<ContextMenu name="НадписьВерсияКонтекстноеМеню" id="189"/>
+							<ExtendedTooltip name="НадписьВерсияРасширеннаяПодсказка" id="190"/>
+						</LabelDecoration>
+					</ChildItems>
+				</UsualGroup>
 			</ChildItems>
 		</UsualGroup>
 					</ChildItems>
